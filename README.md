@@ -1,12 +1,12 @@
 # Nexus API Gateway
 
-High-performance, lightweight Edge API Gateway built on Microsoft YARP (Yet Another Reverse Proxy) for the Nexus microservice ecosystem.
+High-performance, lightweight Edge API Gateway built on Microsoft YARP for the Nexus microservice ecosystem.
 
 ---
 
 ## 1. Overview
 
-The Gateway acts as the single entry point (Edge Reverse Proxy) for all incoming client traffic at port `8080`. It handles:
+The Gateway acts as the single entry point for all incoming client traffic at port `8080`. It handles:
 - **Streaming Reverse Proxy:** High-throughput HTTP forwarding using Microsoft YARP, eliminating redundant proxy controllers and duplicate DTO models.
 - **Edge Authentication & Identity Propagation:** Terminates client JWT Bearer tokens and injects verified claims (`x-user-id`, `x-user-email`, `x-user-roles`, `x-user-permissions`, `x-client-ip`) into downstream headers.
 - **Global Response Envelope:** Intercepts raw microservice JSON responses and encapsulates them into the standard `ApiResponse<T>` structure with `traceId` and UTC timestamps.
@@ -16,7 +16,18 @@ The Gateway acts as the single entry point (Edge Reverse Proxy) for all incoming
 
 ---
 
-## 2. Port & Downstream Service Map
+## 2. Documentation Index
+
+The documentation follows the Diátaxis framework:
+
+- **How-to Guide:** [docs/HOW_TO_GUIDE.md](docs/HOW_TO_GUIDE.md) provides step-by-step instructions for running the gateway, adding new clusters, declaring routes, and testing.
+- **Architecture Explanation:** [docs/EXPLANATION_ARCHITECTURE.md](docs/EXPLANATION_ARCHITECTURE.md) explains why YARP was chosen, why middlewares are partitioned, and how identity propagation works.
+- **Architecture Specification:** [specs/01_ARCHITECTURE.md](specs/01_ARCHITECTURE.md) defines the pipeline execution sequence and security invariants.
+- **Routing Catalog:** [specs/02_ROUTING_CATALOG.md](specs/02_ROUTING_CATALOG.md) lists the complete route-to-cluster mapping and port catalog.
+
+---
+
+## 3. Port & Downstream Service Map
 
 | Service Name | Port | Downstream Route Prefix |
 |:---|:---:|:---|
@@ -33,7 +44,7 @@ The Gateway acts as the single entry point (Edge Reverse Proxy) for all incoming
 
 ---
 
-## 3. Environment Variables
+## 4. Environment Variables
 
 | Variable | Default Value | Description |
 |:---|:---|:---|
@@ -46,7 +57,7 @@ The Gateway acts as the single entry point (Edge Reverse Proxy) for all incoming
 
 ---
 
-## 4. Getting Started
+## 5. Getting Started
 
 ### Build
 ```bash
