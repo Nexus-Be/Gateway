@@ -1,0 +1,40 @@
+# =============================================================================
+# NEXUS YARP API GATEWAY - DOCKER COMPOSE
+# =============================================================================
+# Khởi chạy độc lập YARP Gateway (cổng 8080)
+# Kết nối tới hạ tầng dùng chung và microservices qua mạng nexus-network
+# =============================================================================
+
+services:
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nexus-gateway
+    ports:
+      - "${GATEWAY_PORT:-8080}:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ASPNETCORE_URLS: http://+:8080
+      Jwt__Issuer: ${JWT_ISSUER:-http://localhost:8001}
+      Jwt__Audience: ${JWT_AUDIENCE:-shoppingcart-api}
+      Jwt__Signature: ${JWT_SIGNATURE:-SuperSecretNexusDevelopmentKeyForGatewayAuth1234567890!}
+      Redis__ConnectionString: ${REDIS_CONNECTION_STRING:-redis:6379}
+      # Downstream Cluster Addresses inside Docker Network
+      ReverseProxy__Clusters__user-cluster__Destinations__user-service__Address: ${USERS_SERVICE_URL:-http://user-service:8001}
+      ReverseProxy__Clusters__catalog-cluster__Destinations__catalog-service__Address: ${CATALOG_SERVICE_URL:-http://catalog-service:8002}
+      ReverseProxy__Clusters__commerce-cluster__Destinations__commerce-service__Address: ${COMMERCE_SERVICE_URL:-http://commerce-service:8003}
+      ReverseProxy__Clusters__log-cluster__Destinations__log-service__Address: ${LOG_SERVICE_URL:-http://log-service:8004}
+      ReverseProxy__Clusters__auction-cluster__Destinations__auction-service__Address: ${AUCTION_SERVICE_URL:-http://auction-service:8005}
+      ReverseProxy__Clusters__fulfillment-cluster__Destinations__fulfillment-service__Address: ${FULFILLMENT_SERVICE_URL:-http://fulfillment-service:8006}
+      ReverseProxy__Clusters__notification-cluster__Destinations__notification-service__Address: ${NOTIFICATION_SERVICE_URL:-http://notification-service:8007}
+      ReverseProxy__Clusters__wallet-cluster__Destinations__wallet-service__Address: ${WALLET_SERVICE_URL:-http://wallet-service:8008}
+      ReverseProxy__Clusters__checkheal-cluster__Destinations__checkheal-service__Address: ${CHECKHEAL_SERVICE_URL:-http://checkheal-service:8009}
+    restart: unless-stopped
+
+networks:
+  default:
+    name: nexus-network
+    external: true
