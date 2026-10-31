@@ -15,7 +15,7 @@ Incoming Client Request
 1. GlobalExceptionMiddleware        --> Catches unhandled errors into ApiErrorResponse
   │
   ▼
-2. ClientContextMiddleware          --> Strips external x-user-* headers; extracts IP & TraceId
+2. ClientContextMiddleware          --> Active Anti-Spoofing (403), blocks /internal/* (404), extracts IP & TraceId
   │
   ▼
 3. UseCors("AllowFrontend")         --> Handles CORS preflight and access control
@@ -62,6 +62,32 @@ The Gateway enforces a unified data envelope on all successful read and write op
 }
 ```
 
+### Paginated Collection Response (`ApiResponse<PagedData<T>>`)
+Database-level pagination calculation (`OFFSET/LIMIT` and `COUNT(*)`) is 100% the responsibility of downstream microservices. Microservices return the raw paged payload containing `items` and `pagination`, and the Gateway encapsulates it into `data`:
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "message": "Operation completed successfully.",
+  "data": {
+    "items": [
+      { "id": "22222222-2222-2222-2222-000000000001", "name": "Mechanical Keyboard", "price": 1250000.00 }
+    ],
+    "pagination": {
+      "pageIndex": 1,
+      "pageSize": 20,
+      "totalCount": 245,
+      "totalPages": 13,
+      "hasPreviousPage": false,
+      "hasNextPage": true
+    }
+  },
+  "traceId": "0HNPGT7G285Q2",
+  "timestamp": "2026-10-30T13:00:00Z"
+}
+```
+*Note:* The Gateway is a stateless reverse proxy and strictly prohibited from performing database queries or in-memory pagination splitting on unbounded datasets.
+
 ### Empty Operations
 Empty operations returning HTTP `204 NoContent` pass through with an empty body according to RFC 9110.
 
@@ -82,7 +108,7 @@ Client-facing errors and validation failures adhere to `ApiErrorResponse`:
 
 ## 3. Identity Propagation & Security Guards
 
-1. **Anti-Spoofing:** `ClientContextMiddleware` forcibly strips incoming headers named `x-user-id`, `x-user-email`, `x-user-roles`, and `x-user-permissions`. External callers cannot forge identity.
+1. **Active Anti-Spoofing & Rejection:** `ClientContextMiddleware` actively inspects incoming requests for untrusted identity or internal headers (`x-user-id`, `x-user-email`, `x-user-roles`, `x-user-role`, `x-user-permissions`, `x-user-permission`, `x-internal-service-key`). If detected from an external client, the request is immediately rejected with HTTP `403 Forbidden` (`errorCode: "FORBIDDEN_HEADER_SPOOFING"`). External callers cannot forge identity under any circumstances.
 2. **Transform Injection:** If the caller presents a valid JWT Bearer token, `IdentityPropagationTransform` extracts:
    - `x-user-id`: Caller unique identifier UUID.
    - `x-user-email`: Caller email address.
@@ -91,7 +117,7 @@ Client-facing errors and validation failures adhere to `ApiErrorResponse`:
    - `x-client-ip`: Client remote IP address.
    - `x-trace-id`: Distributed trace identifier.
 3. **Sensitive Route Rate Limiting:** High-risk authentication routes enforce atomic counter checks via Redis:
-   - `POST /api/v1/auth/resend-otp`: 3 requests per 60s
-   - `POST /api/v1/auth/verify-otp`: 5 requests per 60s
+   - `POST /api/v1/auth/otp/resend`: 3 requests per 60s
+   - `POST /api/v1/auth/otp/verify`: 5 requests per 60s
    - `POST /api/v1/auth/register`: 5 requests per 300s
    - `POST /api/v1/auth/login`: 10 requests per 60s

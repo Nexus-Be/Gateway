@@ -1,5 +1,6 @@
 using System;
 using System.Text;
+using Gateway.Extensions;
 using Gateway.Middlewares.Features;
 using Gateway.Middlewares.Global;
 using Gateway.Transforms;
@@ -37,9 +38,25 @@ builder.Services.AddCors(options =>
     });
 });
 
-// 3. JWT Authentication
+// 3. Swagger / OpenAPI aggregation
+builder.Services.AddGatewaySwagger();
+
+// 4. JWT Authentication
 var jwtConfig = builder.Configuration.GetSection("Jwt");
-var signature = jwtConfig["Signature"] ?? Environment.GetEnvironmentVariable("JWT__SIGNATURE");
+var signature = Environment.GetEnvironmentVariable("JWT_SIGNATURE")
+    ?? Environment.GetEnvironmentVariable("JWT_SECRET")
+    ?? jwtConfig["Signature"]
+    ?? Environment.GetEnvironmentVariable("JWT__SIGNATURE");
+
+var issuer = Environment.GetEnvironmentVariable("JWT_ISSUER")
+    ?? Environment.GetEnvironmentVariable("JWT__ISSUER")
+    ?? jwtConfig["Issuer"]
+    ?? "http://localhost:8001";
+
+var audience = Environment.GetEnvironmentVariable("JWT_AUDIENCE")
+    ?? Environment.GetEnvironmentVariable("JWT__AUDIENCE")
+    ?? jwtConfig["Audience"]
+    ?? "shoppingcart-api";
 
 if (!string.IsNullOrWhiteSpace(signature))
 {
@@ -57,10 +74,10 @@ if (!string.IsNullOrWhiteSpace(signature))
         {
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(key),
-            ValidateIssuer = !string.IsNullOrWhiteSpace(jwtConfig["Issuer"]),
-            ValidIssuer = jwtConfig["Issuer"],
-            ValidateAudience = !string.IsNullOrWhiteSpace(jwtConfig["Audience"]),
-            ValidAudience = jwtConfig["Audience"],
+            ValidateIssuer = !string.IsNullOrWhiteSpace(issuer),
+            ValidIssuer = issuer,
+            ValidateAudience = !string.IsNullOrWhiteSpace(audience),
+            ValidAudience = audience,
             ValidateLifetime = true,
             ClockSkew = TimeSpan.Zero
         };
@@ -73,8 +90,9 @@ else
 
 builder.Services.AddAuthorization();
 
-// 4. Redis Connection
-var redisConnectionString = builder.Configuration["Redis:ConnectionString"] 
+// 5. Redis Connection
+var redisConnectionString = Environment.GetEnvironmentVariable("REDIS_CONNECTION_STRING")
+    ?? builder.Configuration["Redis:ConnectionString"] 
     ?? builder.Configuration.GetConnectionString("Redis") 
     ?? "localhost:6379";
 
@@ -91,17 +109,19 @@ catch (Exception)
     // In local dev/test where Redis is not available, Redis will be skipped and in-memory fallback will activate
 }
 
-// 5. YARP Reverse Proxy
+// 6. YARP Reverse Proxy
 builder.Services.AddReverseProxy()
     .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"))
     .AddTransforms(b => b.AddIdentityPropagation());
 
 var app = builder.Build();
 
-// 6. Middleware Pipeline Ordering
+// 7. Middleware Pipeline Ordering
 app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseMiddleware<ClientContextMiddleware>();
 app.UseCors("AllowFrontend");
+
+app.UseGatewaySwagger();
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -111,7 +131,7 @@ app.UseMiddleware<AdminAuthorizationGuardMiddleware>();
 app.UseMiddleware<IdempotencyGuardMiddleware>();
 app.UseMiddleware<ResponseEnvelopeMiddleware>();
 
-// 7. Health & Status endpoints
+// 8. Health & Status endpoints
 app.MapGet("/health", () => Results.Ok(new
 {
     status = "Healthy",
@@ -119,14 +139,20 @@ app.MapGet("/health", () => Results.Ok(new
     timestamp = DateTimeOffset.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")
 }));
 
-app.MapGet("/", () => Results.Ok(new
-{
-    service = "Nexus.Gateway",
-    status = "Running",
-    timestamp = DateTimeOffset.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")
-}));
+app.MapGet("/", () =>
+    SwaggerExtensions.IsSwaggerEnabled(app)
+        ? Results.Redirect("/swagger")
+        : Results.Ok(new
+        {
+            service = "Nexus.Gateway",
+            status = "Running",
+            timestamp = DateTimeOffset.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")
+        }));
 
-// 8. YARP Reverse Proxy Endpoint
+// 9. Swagger aggregation proxies
+app.MapGatewaySwaggerProxies();
+
+// 10. YARP Reverse Proxy Endpoint
 app.MapReverseProxy();
 
 app.Run();

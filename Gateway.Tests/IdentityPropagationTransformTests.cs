@@ -85,4 +85,40 @@ public sealed class IdentityPropagationTransformTests
         proxyRequest.Headers.Contains("x-user-roles").Should().BeFalse();
         proxyRequest.Headers.Contains("x-client-ip").Should().BeTrue();
     }
+
+    [Fact]
+    public async Task ApplyTransform_UserIdClaim_InjectsUserIdHeader()
+    {
+        // Arrange
+        var builderContext = new TransformBuilderContext();
+        builderContext.AddIdentityPropagation();
+
+        var transform = builderContext.RequestTransforms[0];
+        var httpContext = new DefaultHttpContext();
+        httpContext.Connection.RemoteIpAddress = System.Net.IPAddress.Parse("10.0.0.9");
+        httpContext.Items[ClientContextMiddleware.ItemKeyTraceId] = "trace-userId";
+
+        var claims = new[]
+        {
+            new Claim("userId", "22222222-2222-2222-2222-222222222222"),
+            new Claim("email", "seller@example.com"),
+            new Claim("role", "seller")
+        };
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
+
+        var proxyRequest = new HttpRequestMessage(HttpMethod.Get, "http://localhost:8002/api/v1/products");
+        var transformContext = new RequestTransformContext
+        {
+            HttpContext = httpContext,
+            ProxyRequest = proxyRequest
+        };
+
+        // Act
+        await transform.ApplyAsync(transformContext);
+
+        // Assert
+        proxyRequest.Headers.GetValues("x-user-id").Should().ContainSingle().Which.Should().Be("22222222-2222-2222-2222-222222222222");
+        proxyRequest.Headers.GetValues("x-user-email").Should().ContainSingle().Which.Should().Be("seller@example.com");
+        proxyRequest.Headers.GetValues("x-user-roles").Should().ContainSingle().Which.Should().Be("seller");
+    }
 }

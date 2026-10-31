@@ -40,7 +40,8 @@ public static class IdentityPropagationTransform
 
                 var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value
                     ?? user.FindFirst("sub")?.Value
-                    ?? user.FindFirst("id")?.Value;
+                    ?? user.FindFirst("id")?.Value
+                    ?? user.FindFirst("userId")?.Value;
 
                 if (!string.IsNullOrWhiteSpace(userId))
                 {

@@ -31,6 +31,17 @@ dotnet run --project Gateway/Gateway.csproj
 ```
 Gateway lắng nghe yêu cầu tại cổng `http://localhost:8080`.
 
+### Bước 4: Mở Swagger UI
+Ở môi trường Development, mở `http://localhost:8080` sẽ được chuyển tự động sang `http://localhost:8080/swagger`.
+Trang này có dropdown gồm 10 mục: tài liệu của Gateway và 9 service downstream.
+Chọn một service để xem hợp đồng của service đó, và bấm Try it out để gọi xuyên qua Gateway.
+
+Khi Swagger bị tắt, `/` trả về JSON trạng thái thay vì chuyển hướng.
+Để kiểm tra tự động toàn bộ trang Swagger của 10 ứng dụng, chạy từ thư mục gốc monorepo:
+```bash
+bash tools/verify-swagger.sh
+```
+
 ---
 
 ## 2. Kiểm Tra Trạng Thái Hoạt Động (Health Check)
@@ -71,37 +82,26 @@ Mở file `Gateway/appsettings.json`. Tìm khối `ReverseProxy:Clusters` và th
 
 ## 4. Khai Báo Và Định Tuyến Route Mới
 
-Sau khi khai báo Cluster, bạn cấu hình đường dẫn công khai để YARP chuyển tiếp yêu cầu đến service đích.
+Sau khi khai báo Cluster, bạn thêm đúng một route cho mỗi tiền tố tài nguyên công khai.
 
-Mở file `Gateway/appsettings.json`. Trong khối `ReverseProxy:Routes`, thêm route mới:
+Mở cả `Gateway/appsettings.json` và `Gateway/appsettings.example.json`, thêm cùng một mục vào khối `ReverseProxy:Routes`:
 
 ```json
-"inventory-route": {
+"inventories-route": {
   "ClusterId": "inventory-cluster",
-  "Order": 110,
   "Match": {
-    "Path": "/api/v1/inventory/{**catch-all}"
+    "Path": "/api/v1/inventories/{**catch-all}"
   }
 }
 ```
 
-### Ánh xạ lại đường dẫn (Path Transform)
-Nếu đường dẫn công khai khác với đường dẫn nội bộ của service, bạn thêm phần `Transforms`. Ví dụ khi chuyển đổi `/api/v1/admin/*` thành `/api/v1/admin/user/*`:
+Ba quy tắc khi thêm route.
 
-```json
-"admin-route": {
-  "ClusterId": "user-cluster",
-  "Order": 1,
-  "Match": {
-    "Path": "/api/v1/admin/{**catch-all}"
-  },
-  "Transforms": [
-    {
-      "PathPattern": "/api/v1/admin/user/{**catch-all}"
-    }
-  ]
-}
-```
+1. Tên tài nguyên dùng số nhiều. Route số ít không được khai báo dưới bất kỳ hình thức nào.
+2. Chỉ dùng một pattern `{**catch-all}` cho mỗi tiền tố. Catch-all khớp cả chuỗi rỗng nên cũng phủ chính đường dẫn gốc, không cần thêm route `-direct`.
+3. Không thêm `Transforms` và `Order`. Mỗi tiền tố là duy nhất nên thứ tự không có tác dụng.
+
+Sau khi sửa, cập nhật `Gateway.Tests/RouteConfigurationTests.cs` để danh sách route kỳ vọng khớp, rồi chạy `dotnet test Gateway.sln -c Release`.
 
 ---
 
@@ -109,17 +109,16 @@ Nếu đường dẫn công khai khác với đường dẫn nội bộ của se
 
 Để bảo vệ thêm một endpoint chống tấn công vét cạn hoặc gửi thư rác, bạn cập nhật bảng luật trong file `Gateway/Middlewares/Features/SensitiveRateLimitMiddleware.cs`.
 
-Mở file `SensitiveRateLimitMiddleware.cs`. Thêm cặp phương thức HTTP và đường dẫn vào từ điển `SensitiveRules`:
+Mở file `SensitiveRateLimitMiddleware.cs`. Thêm cặp phương thức HTTP và đường dẫn vào từ điển `SensitiveRules`. Khóa phải trùng chính xác với route thật, nếu không rule sẽ không bao giờ chạy:
 
 ```csharp
 private static readonly Dictionary<string, RateLimitRule> SensitiveRules = new(StringComparer.OrdinalIgnoreCase)
 {
-    { "POST:/api/v1/auth/resend-otp", new RateLimitRule(MaxRequests: 3, WindowSeconds: 60) },
-    { "POST:/api/v1/auth/verify-otp", new RateLimitRule(MaxRequests: 5, WindowSeconds: 60) },
-    { "POST:/api/v1/auth/register",   new RateLimitRule(MaxRequests: 5, WindowSeconds: 300) },
-    { "POST:/api/v1/auth/login",      new RateLimitRule(MaxRequests: 10, WindowSeconds: 60) },
-    // Quy tắc mới cho tính năng đặt lại mật khẩu:
-    { "POST:/api/v1/auth/reset-password", new RateLimitRule(MaxRequests: 3, WindowSeconds: 300) }
+    { "POST:/api/v1/auth/otp/resend",    new RateLimitRule(MaxRequests: 3, WindowSeconds: 60) },
+    { "POST:/api/v1/auth/otp/verify",    new RateLimitRule(MaxRequests: 5, WindowSeconds: 60) },
+    { "POST:/api/v1/auth/register",      new RateLimitRule(MaxRequests: 5, WindowSeconds: 300) },
+    { "POST:/api/v1/auth/login",         new RateLimitRule(MaxRequests: 10, WindowSeconds: 60) },
+    { "PUT:/api/v1/auth/password/reset", new RateLimitRule(MaxRequests: 3, WindowSeconds: 300) }
 };
 ```
 
@@ -132,7 +131,4 @@ private static readonly Dictionary<string, RateLimitRule> SensitiveRules = new(S
 dotnet test Gateway.sln -c Release
 ```
 
-Kết quả mong đợi:
-```text
-Passed!  - Failed: 0, Passed: 10, Skipped: 0, Total: 10
-```
+Kết quả mong đợi: toàn bộ test đạt, `Failed: 0`.

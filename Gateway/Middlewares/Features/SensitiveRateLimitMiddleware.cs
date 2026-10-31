@@ -21,8 +21,8 @@ public sealed class SensitiveRateLimitMiddleware
 
     private static readonly Dictionary<string, RateLimitRule> SensitiveRules = new(StringComparer.OrdinalIgnoreCase)
     {
-        { "POST:/api/v1/auth/resend-otp", new RateLimitRule(MaxRequests: 3, WindowSeconds: 60) },
-        { "POST:/api/v1/auth/verify-otp", new RateLimitRule(MaxRequests: 5, WindowSeconds: 60) },
+        { "POST:/api/v1/auth/otp/resend", new RateLimitRule(MaxRequests: 3, WindowSeconds: 60) },
+        { "POST:/api/v1/auth/otp/verify", new RateLimitRule(MaxRequests: 5, WindowSeconds: 60) },
         { "POST:/api/v1/auth/register", new RateLimitRule(MaxRequests: 5, WindowSeconds: 300) },
         { "POST:/api/v1/auth/login", new RateLimitRule(MaxRequests: 10, WindowSeconds: 60) }
     };

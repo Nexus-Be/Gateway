@@ -27,3 +27,11 @@ bld/
 .env.*
 !.env.example
 !.env.*.example
+
+## Appsettings & Secrets (DO NOT COMMIT ORIGINALS - ONLY COMMIT *.example*)
+appsettings.json
+appsettings.Development.json
+appsettings.Local.json
+appsettings.Production.json
+!appsettings.example.json
+!appsettings.Development.example.json

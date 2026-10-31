@@ -46,12 +46,12 @@ public sealed class SensitiveRateLimitMiddlewareTests
         var sp = new Mock<IServiceProvider>().Object;
         var ip = $"test-ip-{Guid.NewGuid():N}";
 
-        // Max limit for resend-otp is 3 requests per 60s
+        // Max limit for otp/resend is 3 requests per 60s
         for (var i = 1; i <= 3; i++)
         {
             var ctx = new DefaultHttpContext();
             ctx.Request.Method = "POST";
-            ctx.Request.Path = "/api/v1/auth/resend-otp";
+            ctx.Request.Path = "/api/v1/auth/otp/resend";
             ctx.Connection.RemoteIpAddress = System.Net.IPAddress.Parse("127.0.0.1");
             ctx.Items["ClientIp"] = ip;
             await middleware.InvokeAsync(ctx, sp);
@@ -61,7 +61,7 @@ public sealed class SensitiveRateLimitMiddlewareTests
         // 4th request must be rate limited
         var blockedContext = new DefaultHttpContext();
         blockedContext.Request.Method = "POST";
-        blockedContext.Request.Path = "/api/v1/auth/resend-otp";
+        blockedContext.Request.Path = "/api/v1/auth/otp/resend";
         blockedContext.Items["ClientIp"] = ip;
         blockedContext.Response.Body = new MemoryStream();
 
@@ -78,5 +78,39 @@ public sealed class SensitiveRateLimitMiddlewareTests
 
         using var doc = JsonDocument.Parse(body);
         doc.RootElement.GetProperty("errorCode").GetString().Should().Be("RATE_LIMIT_EXCEEDED");
+    }
+
+    [Theory]
+    [InlineData("/api/v1/auth/otp/resend", 3)]
+    [InlineData("/api/v1/auth/otp/verify", 5)]
+    public async Task InvokeAsync_StandardOtpRoutes_AreRateLimited(string path, int maxAllowed)
+    {
+        // Arrange
+        var middleware = new SensitiveRateLimitMiddleware(context => Task.CompletedTask, NullLogger<SensitiveRateLimitMiddleware>.Instance);
+        var sp = new Mock<IServiceProvider>().Object;
+        var ip = $"test-ip-{Guid.NewGuid():N}";
+
+        for (var i = 1; i <= maxAllowed; i++)
+        {
+            var ctx = new DefaultHttpContext();
+            ctx.Request.Method = "POST";
+            ctx.Request.Path = path;
+            ctx.Items["ClientIp"] = ip;
+            await middleware.InvokeAsync(ctx, sp);
+            ctx.Response.StatusCode.Should().Be(200);
+        }
+
+        // Subsequent request must be 429
+        var blockedContext = new DefaultHttpContext();
+        blockedContext.Request.Method = "POST";
+        blockedContext.Request.Path = path;
+        blockedContext.Items["ClientIp"] = ip;
+        blockedContext.Response.Body = new MemoryStream();
+
+        // Act
+        await middleware.InvokeAsync(blockedContext, sp);
+
+        // Assert
+        blockedContext.Response.StatusCode.Should().Be(StatusCodes.Status429TooManyRequests);
     }
 }

@@ -11,8 +11,8 @@ The Gateway acts as the single entry point for all incoming client traffic at po
 - **Edge Authentication & Identity Propagation:** Terminates client JWT Bearer tokens and injects verified claims (`x-user-id`, `x-user-email`, `x-user-roles`, `x-user-permissions`, `x-client-ip`) into downstream headers.
 - **Global Response Envelope:** Intercepts raw microservice JSON responses and encapsulates them into the standard `ApiResponse<T>` structure with `traceId` and UTC timestamps.
 - **Strict Route Rate Limiting:** Enforces Redis-backed rate limiting on sensitive authentication operations (OTP verification, registration, login).
-- **Administrative Path Normalization:** Exposes `/api/v1/admin/{**catch-all}` externally and transforms it downstream to `/api/v1/admin/user/{**catch-all}`.
-- **Anti-Spoofing Security:** Strips all inbound `x-user-*` headers from external clients before forwarding.
+- **Domain-Segregated Admin Routing:** Each admin prefix (`/api/v1/admin/users`, `/api/v1/admin/roles`, `/api/v1/admin/wallets`, `/api/v1/admin/notifications`, `/api/v1/admin/health`) forwards to its owning service. A single catch-all admin route is prohibited.
+- **Active Anti-Spoofing Security:** Actively rejects any external requests carrying untrusted identity headers (`x-user-*`, `x-internal-service-key`) with HTTP 403 Forbidden.
 
 ---
 
@@ -32,7 +32,7 @@ The documentation follows the Diátaxis framework:
 | Service Name | Port | Downstream Route Prefix |
 |:---|:---:|:---|
 | **Gateway (Host)** | `8080` | `/api/v1/**` |
-| **UserService** | `8001` | `/api/v1/auth`, `/api/v1/user`, `/api/v1/admin`, `/api/v1/me`, `/api/v1/sellers` |
+| **UserService** | `8001` | `/api/v1/auth`, `/api/v1/users`, `/api/v1/admin/users`, `/api/v1/me`, `/api/v1/sellers` |
 | **CatalogService** | `8002` | `/api/v1/categories`, `/api/v1/products` |
 | **CommerceService** | `8003` | `/api/v1/carts`, `/api/v1/orders` |
 | **LogService** | `8004` | `/api/v1/logs` |
@@ -41,6 +41,16 @@ The documentation follows the Diátaxis framework:
 | **NotificationService** | `8007` | `/api/v1/notifications`, `/api/v1/email` |
 | **WalletService** | `8008` | `/api/v1/wallets` |
 | **CheckHealService** | `8009` | `/health`, `/api/v1/checkheal` |
+
+---
+
+## 4. Swagger UI
+
+Open `http://localhost:8080` in Development and the Gateway redirects to `/swagger`.
+The page carries a dropdown with the Gateway document plus one document per downstream service.
+JSON documents are fetched server-side from the clusters declared under `ReverseProxy:Clusters`, so the same UI works locally and in Docker.
+
+Run `bash tools/verify-swagger.sh` from the monorepo root to check the Swagger surface of all ten applications.
 
 ---
 

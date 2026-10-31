@@ -19,6 +19,12 @@ public sealed class ResponseEnvelopeMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
+        if (context.Request.Path.StartsWithSegments("/swagger", StringComparison.OrdinalIgnoreCase))
+        {
+            await _next(context);
+            return;
+        }
+
         var originalBodyStream = context.Response.Body;
         await using var memoryStream = new MemoryStream();
         context.Response.Body = memoryStream;
@@ -69,8 +75,16 @@ public sealed class ResponseEnvelopeMiddleware
             {
                 var root = doc.RootElement;
 
-                // If already enveloped (has "success" property), pass through directly
-                if (root.ValueKind == JsonValueKind.Object && root.TryGetProperty("success", out _))
+                // If already enveloped (has boolean "success" AND envelope metadata), pass through directly
+                var isAlreadyEnveloped = root.ValueKind == JsonValueKind.Object &&
+                    root.TryGetProperty("success", out var successElement) &&
+                    (successElement.ValueKind == JsonValueKind.True || successElement.ValueKind == JsonValueKind.False) &&
+                    (root.TryGetProperty("statusCode", out _) ||
+                     root.TryGetProperty("traceId", out _) ||
+                     root.TryGetProperty("timestamp", out _) ||
+                     root.TryGetProperty("errorCode", out _));
+
+                if (isAlreadyEnveloped)
                 {
                     memoryStream.Position = 0;
                     await memoryStream.CopyToAsync(originalBodyStream);
@@ -79,11 +93,24 @@ public sealed class ResponseEnvelopeMiddleware
 
                 // 4. Wrap raw data into ApiResponse<T>
                 var traceId = Activity.Current?.Id ?? context.TraceIdentifier;
+                var envelopeMessage = "Operation completed successfully.";
+
+                if (root.ValueKind == JsonValueKind.Object &&
+                    root.TryGetProperty("message", out var msgElement) &&
+                    msgElement.ValueKind == JsonValueKind.String)
+                {
+                    var customMsg = msgElement.GetString();
+                    if (!string.IsNullOrWhiteSpace(customMsg))
+                    {
+                        envelopeMessage = customMsg.Trim();
+                    }
+                }
+
                 var wrapped = new ApiResponse<JsonElement>
                 {
                     Success = true,
                     StatusCode = context.Response.StatusCode,
-                    Message = "Operation completed successfully.",
+                    Message = envelopeMessage,
                     Data = root.Clone(),
                     TraceId = traceId,
                     Timestamp = DateTimeOffset.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")
