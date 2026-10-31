@@ -44,7 +44,7 @@ public sealed class ClientContextMiddlewareTests
     [InlineData("/api/v1/internal/inventories")]
     [InlineData("/api/v1/internal/email/otp")]
     [InlineData("/services/internal/debug")]
-    public async Task InvokeAsync_BlocksInternalEndpoints_WithNotFound(string internalPath)
+    public async Task InvokeAsync_AllowsLegacyInternalPaths_WhenBlockingIsDisabled(string internalPath)
     {
         // Arrange
         var nextInvoked = false;
@@ -54,14 +54,15 @@ public sealed class ClientContextMiddlewareTests
             return Task.CompletedTask;
         });
         var context = new DefaultHttpContext();
+        context.Response.Body = new System.IO.MemoryStream();
         context.Request.Path = internalPath;
 
         // Act
         await middleware.InvokeAsync(context);
 
         // Assert
-        nextInvoked.Should().BeFalse();
-        context.Response.StatusCode.Should().Be(StatusCodes.Status404NotFound);
+        nextInvoked.Should().BeTrue();
+        context.Response.StatusCode.Should().Be(StatusCodes.Status200OK);
     }
 
     [Fact]

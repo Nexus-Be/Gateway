@@ -12,7 +12,7 @@
 
 ## 3. 9-Layer Middleware Pipeline Order
 1. `GlobalExceptionMiddleware`: Top-level safety net returning unified `ApiErrorResponse` on unhandled 500 exceptions.
-2. `ClientContextMiddleware`: Active Anti-Header-Spoofing & strict `/api/v1/internal/*` blocker.
+2. `ClientContextMiddleware`: Active Anti-Header-Spoofing, extracts IP and TraceId. The `/api/v1/internal/*` path blocker is temporarily disabled.
 3. `AuthenticationMiddleware` & `JwtBearerHandler`: Edge JWT signature verification.
 4. `AdminAuthorizationGuardMiddleware`: Edge coarse-grained RBAC guard for `/api/v1/admin/**`.
 5. `IdempotencyGuardMiddleware`: Validates `Idempotency-Key` format and length on mutating HTTP methods.

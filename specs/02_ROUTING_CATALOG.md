@@ -57,6 +57,6 @@ One route per public resource prefix. Every route uses a single `{**catch-all}` 
 2. **One pattern per prefix.** A separate `-direct` route is redundant because `{**catch-all}` matches the empty remainder.
 3. **No `Transforms`, no `Order`.** Every prefix is literal and disjoint, so path rewriting and precedence numbers have no effect.
 4. **Admin is partitioned by domain.** `/api/v1/admin/users`, `/api/v1/admin/roles`, `/api/v1/admin/wallets`, `/api/v1/admin/notifications`, and `/api/v1/admin/health` each reach their own cluster. A single `/api/v1/admin/{**catch-all}` route to UserService is prohibited.
-5. **Internal APIs never appear here.** `ClientContextMiddleware` rejects any path containing `/internal/` with HTTP 404 before proxying.
+5. **Internal APIs never appear here.** No YARP route targets `/internal/`. The `ClientContextMiddleware` path block is temporarily disabled since 2026-10-31, so a legacy internal path matches no route.
 6. **Gateway-local `/health`.** `Program.cs` maps its own `GET /health` endpoint, which takes precedence over `health-route`. Only the deeper probes proxy to CheckHeal.
 7. **The table is pinned.** `Gateway.Tests/RouteConfigurationTests.cs` fails when a route is added, removed, or renamed, when a route gains a transform or an ordering number, or when a route exposes a singular resource segment.

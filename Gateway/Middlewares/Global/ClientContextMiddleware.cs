@@ -84,26 +84,26 @@ public sealed class ClientContextMiddleware
             }
         }
 
-        // 4. Reject attempts to call internal service APIs via Gateway
-        if (context.Request.Path.StartsWithSegments("/api/v1/internal", StringComparison.OrdinalIgnoreCase) ||
-            context.Request.Path.Value?.Contains("/internal/", StringComparison.OrdinalIgnoreCase) == true)
-        {
-            context.Response.StatusCode = StatusCodes.Status404NotFound;
-            context.Response.ContentType = "application/json";
+        // 4. Internal API path blocking is temporarily disabled. Inter-service routes are plain REST paths.
+        // if (context.Request.Path.StartsWithSegments("/api/v1/internal", StringComparison.OrdinalIgnoreCase) ||
+        //     context.Request.Path.Value?.Contains("/internal/", StringComparison.OrdinalIgnoreCase) == true)
+        // {
+        //     context.Response.StatusCode = StatusCodes.Status404NotFound;
+        //     context.Response.ContentType = "application/json";
 
-            var notFoundResponse = new ApiErrorResponse
-            {
-                Success = false,
-                StatusCode = StatusCodes.Status404NotFound,
-                ErrorCode = "NOT_FOUND",
-                Message = "Resource not found.",
-                TraceId = traceId,
-                Timestamp = DateTimeOffset.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")
-            };
+        //     var notFoundResponse = new ApiErrorResponse
+        //     {
+        //         Success = false,
+        //         StatusCode = StatusCodes.Status404NotFound,
+        //         ErrorCode = "NOT_FOUND",
+        //         Message = "Resource not found.",
+        //         TraceId = traceId,
+        //         Timestamp = DateTimeOffset.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")
+        //     };
 
-            await context.Response.WriteAsync(JsonSerializer.Serialize(notFoundResponse));
-            return;
-        }
+        //     await context.Response.WriteAsync(JsonSerializer.Serialize(notFoundResponse));
+        //     return;
+        // }
 
         // 5. Inject security and tracking headers on response start
         context.Response.OnStarting(() =>

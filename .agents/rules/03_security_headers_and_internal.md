@@ -8,9 +8,11 @@
   * `errorCode: "FORBIDDEN_HEADER_SPOOFING"`
   * `message: "Security violation: Untrusted identity header detected in external request."`
 
-## 2. Strict Internal Route Isolation
-* Gateway actively rejects any request with path starting with `/api/v1/internal` or containing `/internal/` with HTTP `404 Not Found` (`NOT_FOUND`).
-* Prohibit configuring any YARP route pointing to `/internal/*`.
+## 2. Temporary Internal Route Blocking Disable
+* `/api/v1/internal` path blocking is commented in `ClientContextMiddleware` as of 2026-10-31.
+* `SanitizeDocument` no longer strips internal paths.
+* Inter-service routes are plain REST paths and may pass through the Gateway.
+* Re-enabling requires explicit approval and restoring both blocks.
 
 ## 3. Trusted Identity Propagation
 * `IdentityPropagationTransform` extracts claims from verified JWT Bearer token:

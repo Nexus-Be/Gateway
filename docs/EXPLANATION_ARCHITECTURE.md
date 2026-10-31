@@ -47,7 +47,7 @@ Yêu cầu HTTP từ Client (Port 8080)
 [ 1. GlobalExceptionMiddleware ]   --> Bắt toàn bộ lỗi chưa được xử lý thành ApiErrorResponse
   │
   ▼
-[ 2. ClientContextMiddleware ]     --> Active Anti-Spoofing (403), Chặn /internal/* (404), Gán IP/TraceId
+[ 2. ClientContextMiddleware ]     --> Active Anti-Spoofing (403), Gán IP/TraceId, tạm hoãn chặn /internal/*
   │
   ▼
 [ 3. UseCors ("AllowFrontend") ]   --> Xử lý yêu cầu CORS Preflight (OPTIONS)
@@ -119,15 +119,16 @@ Nếu phát hiện bất kỳ header nào trong danh sách trên từ yêu cầu
 
 ---
 
-## 5. Cơ Chế Cách Ly Tuyệt Đối Các API Nội Bộ (Internal Route Block)
+## 5. Trạng Thái Tạm Hoãn Cách Ly Các API Nội Bộ (Internal Route Block Postponed)
 
-Hệ thống Nexus phân định rõ ràng giữa Public REST API (dành cho người dùng bên ngoài qua Gateway) và Internal REST API (chỉ phục vụ giao tiếp trực tiếp giữa các microservice qua mạng riêng).
+Hệ thống Nexus từng phân định Public REST API (phục vụ người dùng qua Gateway) và Internal REST API (chỉ giao tiếp giữa các microservice). Từ 2026-10-31, mô hình Internal API tạm khóa.
 
-Các endpoint nội bộ như nạp lô nhật ký (`POST /api/v1/internal/logs/batch`), gửi OTP email (`POST /api/v1/internal/notifications/email/otp`), hay trừ tiền ví trực tiếp (`POST /api/v1/internal/wallets/checkout/direct`) tuyệt đối không được phép tiếp cận từ Internet.
+Các route liên service chuyển sang tiền tố công khai và đi qua Gateway như API thường, gồm nạp lô nhật ký (`POST /api/v1/logs/batch`), gửi OTP email (`POST /api/v1/notifications/email/otp`), và thanh toán trực tiếp từ ví (`POST /api/v1/wallets/checkout/direct`).
 
-### Cơ chế chặn hai lớp tại Gateway:
-1. **Chặn cứng tại Middleware:** `ClientContextMiddleware` kiểm tra đường dẫn request. Mọi yêu cầu bắt đầu bằng `/api/v1/internal` hoặc chứa cụm từ `/internal/` đều bị từ chối ngay lập tức với HTTP `404 Not Found` (`NOT_FOUND`). Gateway không trả về HTTP 403 nhằm che giấu hoàn toàn sự tồn tại của các endpoint này trước những kẻ quét cổng mạng (Port Scanners).
-2. **Quy chuẩn cấu hình YARP:** Trong file `Gateway/appsettings.json`, tuyệt đối cấm khai báo bất kỳ route nào có đường dẫn chứa `/internal/`.
+### Trạng thái hiện tại:
+1. **Khối chặn tại Middleware đã bị comment:** `ClientContextMiddleware` không còn từ chối path `/api/v1/internal` hay `/internal/`, nên request đi tiếp vào pipeline như API thường.
+2. **Quy chuẩn cấu hình YARP vẫn giữ:** Trong file `Gateway/appsettings.json`, tuyệt đối cấm khai báo bất kỳ route nào có đường dẫn chứa `/internal/`.
+3. **Bật lại cần phê duyệt:** Khôi phục khối chặn phải có phê duyệt rõ ràng của Người dùng và cập nhật đồng bộ middleware, test, và tài liệu.
 
 ---
 
@@ -273,7 +274,7 @@ Mọi phản hồi lỗi phát sinh từ chính Gateway đều được định 
 | `401 Unauthorized` | `UNAUTHORIZED` | Thiếu token JWT, token hết hạn, hoặc chữ ký số không hợp lệ trên route cần đăng nhập. |
 | `403 Forbidden` | `FORBIDDEN_HEADER_SPOOFING` | Client gửi các header định danh bị cấm (`x-user-id`, `x-internal-service-key`...). |
 | `403 Forbidden` | `FORBIDDEN` | Người dùng thiếu vai trò `admin` hoặc `staff` khi truy cập `/api/v1/admin/**`. |
-| `404 NotFound` | `NOT_FOUND` | Client gửi yêu cầu vào các đường dẫn nội bộ `/api/v1/internal/**`. |
+| `404 NotFound` | `NOT_FOUND` | Route không tồn tại. Khối chặn `/api/v1/internal` đang tạm hoãn nên path nội bộ đi qua như API thường. |
 | `429 TooManyRequests` | `RATE_LIMIT_EXCEEDED` | Vượt quá số lần gọi cho phép trong khung thời gian trên các tuyến xác thực nhạy cảm. |
 | `500 InternalServerError` | `INTERNAL_SERVER_ERROR` | Lỗi ngoại lệ phát sinh không mong muốn trong quá trình thực thi middleware tại Gateway. |
 | `503 ServiceUnavailable` | `SERVICE_UNAVAILABLE` | Cụm dịch vụ downstream tương ứng bị mất kết nối mạng hoặc không phản hồi. |

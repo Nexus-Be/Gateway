@@ -15,7 +15,7 @@ Incoming Client Request
 1. GlobalExceptionMiddleware        --> Catches unhandled errors into ApiErrorResponse
   │
   ▼
-2. ClientContextMiddleware          --> Active Anti-Spoofing (403), blocks /internal/* (404), extracts IP & TraceId
+2. ClientContextMiddleware          --> Active Anti-Spoofing (403), extracts IP & TraceId, internal path block temporarily disabled
   │
   ▼
 3. UseCors("AllowFrontend")         --> Handles CORS preflight and access control

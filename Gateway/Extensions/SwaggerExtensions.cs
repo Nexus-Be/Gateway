@@ -220,19 +220,20 @@ public static class SwaggerExtensions
             return document;
         }
 
-        if (openApiDocument["paths"] is JsonObject paths)
-        {
-            var internalPaths = paths
-                .Select(entry => entry.Key)
-                .Where(path => path.StartsWith("/api/v1/internal", StringComparison.OrdinalIgnoreCase) ||
-                               path.Contains("/internal/", StringComparison.OrdinalIgnoreCase))
-                .ToList();
+        // Internal path stripping is temporarily disabled. No internal routes remain.
+        // if (openApiDocument["paths"] is JsonObject paths)
+        // {
+        //     var internalPaths = paths
+        //         .Select(entry => entry.Key)
+        //         .Where(path => path.StartsWith("/api/v1/internal", StringComparison.OrdinalIgnoreCase) ||
+        //                        path.Contains("/internal/", StringComparison.OrdinalIgnoreCase))
+        //         .ToList();
 
-            foreach (var path in internalPaths)
-            {
-                paths.Remove(path);
-            }
-        }
+        //     foreach (var path in internalPaths)
+        //     {
+        //         paths.Remove(path);
+        //     }
+        // }
 
         if (openApiDocument["components"] is JsonObject components &&
             components["securitySchemes"] is JsonObject securitySchemes)

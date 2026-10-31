@@ -68,9 +68,9 @@ public sealed class ArchitecturalContractInvariantTests
     [InlineData("/api/v1/internal/wallets/checkout/direct")]
     [InlineData("/api/v1/internal/logs/batch")]
     [InlineData("/internal/secret-debug")]
-    public async Task Invariant_InternalRoutes_AreCompletelyBlocked_With404NotFound(string internalPath)
+    public async Task Invariant_LegacyInternalRoutes_AreNotBlocked_AfterTemporaryDisable(string internalPath)
     {
-        // Invariant 3: External requests to internal service-to-service endpoints MUST be rejected with 404
+        // Invariant 3 was temporarily disabled on 2026-10-31. Legacy internal paths now flow through.
         var nextCalled = false;
         var middleware = new ClientContextMiddleware(context =>
         {
@@ -84,8 +84,8 @@ public sealed class ArchitecturalContractInvariantTests
 
         await middleware.InvokeAsync(context);
 
-        nextCalled.Should().BeFalse("Internal routes must never reach downstream proxies via Gateway");
-        context.Response.StatusCode.Should().Be(StatusCodes.Status404NotFound);
+        nextCalled.Should().BeTrue();
+        context.Response.StatusCode.Should().Be(StatusCodes.Status200OK);
     }
 
     [Fact]

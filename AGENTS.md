@@ -6,6 +6,12 @@
 
 ---
 
+## Endpoint Workflow
+
+Before adding or changing any REST endpoint, follow the local checklist at `.agents/skills/new-feature-endpoint/SKILL.md`. It covers contract, persistence, Application, Api, tests, documentation handoff, and verification. This repository is Inward-Only, so the checklist is self-contained.
+
+---
+
 ## 🛑 NGUYÊN TẮC 1: BẮT BUỘC LẬP KẾ HOẠCH TRƯỚC KHI HÀNH ĐỘNG (PLAN-FIRST RULE)
 
 Mọi AI Agent khi nhận nhiệm vụ kỹ thuật tại Gateway **BẮT BUỘC PHẢI LẬP VÀ TRÌNH BÀY PLAN** trước khi thực hiện bất kỳ hành động sửa đổi mã nguồn, thêm/xóa file, refactor hay thay đổi cấu hình nào:
@@ -57,9 +63,10 @@ Khi bắt đầu làm việc tại Gateway, AI Agent **BẮT BUỘC PHẢI ĐỌ
    - Gateway chỉ định tuyến các route collections số nhiều: `/api/v1/users`, `/api/v1/products`, `/api/v1/categories`, `/api/v1/carts`, `/api/v1/orders`, `/api/v1/shipments`, `/api/v1/auctions`, `/api/v1/wallets`, `/api/v1/notifications`, `/api/v1/logs`.
    - Các route quản trị admin phải phân tách rõ ràng theo domain: `/api/v1/admin/users/**`, `/api/v1/admin/auctions/**`, `/api/v1/admin/wallets/**`, `/api/v1/admin/notifications/**`. CẤM dùng 1 route duy nhất `admin-route` nuốt toàn bộ path sang UserService.
    - Ngoại lệ đơn lẻ: `/api/v1/me` và `/api/v1/auth`.
-8. **RÀO CHẮN NGĂN CHẶN TOÀN DIỆN INTERNAL REST API (STRICT INTERNAL API BLOCK)**:
-   - `ClientContextMiddleware` luôn bóc tách (remove) header `X-Internal-Service-Key` từ mọi request bên ngoài để chống giả mạo danh tính nội bộ.
-   - Gateway từ chối ngay lập tức với HTTP 404 Not Found mọi request có path bắt đầu bằng `/api/v1/internal` hoặc chứa `/internal/`.
+8. **INTERNAL API ĐANG TẠM KHÓA (2026-10-31)**:
+   - `ClientContextMiddleware` vẫn bóc tách (remove) header `X-Internal-Service-Key` từ mọi request bên ngoài để chống giả mạo danh tính nội bộ.
+   - Khối chặn path `/api/v1/internal` và `/internal/` đang bị comment. Request đi qua như API thường, không trả 404.
+   - Bật lại khối chặn cần phê duyệt rõ ràng của Người dùng và cập nhật đồng bộ test, docs.
    - TUYỆT ĐỐI CẤM khai báo bất kỳ YARP route nào cho các endpoint `/internal/*` trong `appsettings.json`.
 
 ---

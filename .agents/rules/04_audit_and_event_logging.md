@@ -3,7 +3,7 @@
 ## 1. Security Ingress Audit Logging
 * Log security events with Client IP and TraceId:
   * Blocked header spoofing attempts (IP, spoofed header names, target path).
-  * Blocked internal API access attempts (IP, requested path).
+  * Internal API path-block attempts are not logged while the block is disabled; log them again only after the block is re-enabled.
   * Unauthorized admin endpoint access attempts.
   * Rate-limit threshold violations (`RATE_LIMIT_EXCEEDED`).
 

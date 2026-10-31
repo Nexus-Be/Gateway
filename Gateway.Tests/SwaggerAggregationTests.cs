@@ -56,14 +56,14 @@ public sealed class SwaggerAggregationTests
     }
 
     [Fact]
-    public void SanitizeDocument_RemovesInternalPaths_KeepingOnlyPublicApis()
+    public void SanitizeDocument_KeepsLegacyInternalPaths_WhenPathStrippingIsDisabled()
     {
         var sanitized = SwaggerExtensions.SanitizeDocument(DownstreamDocument);
 
         using var document = JsonDocument.Parse(sanitized);
         var paths = document.RootElement.GetProperty("paths");
 
-        paths.TryGetProperty("/api/v1/internal/wallets/checkout/direct", out _).Should().BeFalse();
+        paths.TryGetProperty("/api/v1/internal/wallets/checkout/direct", out _).Should().BeTrue();
         paths.TryGetProperty("/api/v1/wallets/me", out _).Should().BeTrue();
     }
 
