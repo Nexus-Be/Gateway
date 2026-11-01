@@ -18,14 +18,15 @@
   * `RATE_LIMIT_EXCEEDED`
   * `INTERNAL_SERVER_ERROR`
 
-## 3. ApiErrorResponse Structure
-* Gateway generated errors conform to `ApiErrorResponse`:
+## 3. ApiErrorResponse Structure (RFC 9110 ProblemDetails)
+* Gateway generated errors conform to RFC 9110 ProblemDetails:
   ```json
   {
-    "success": false,
-    "statusCode": 403,
+    "type": "https://tools.ietf.org/html/rfc9110#section-15.5.4",
+    "title": "Forbidden",
+    "status": 403,
     "errorCode": "FORBIDDEN_HEADER_SPOOFING",
-    "message": "Security violation: Untrusted identity header detected in external request.",
+    "detail": "Security violation: Untrusted identity header detected in external request.",
     "traceId": "0HNPGT7G285Q2",
     "timestamp": "2026-10-31T05:30:00Z"
   }

@@ -43,14 +43,15 @@ public sealed class GlobalExceptionMiddleware
 
         context.Response.Clear();
         context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-        context.Response.ContentType = "application/json";
+        context.Response.ContentType = "application/problem+json";
 
         var errorResponse = new ApiErrorResponse
         {
-            Success = false,
-            StatusCode = StatusCodes.Status500InternalServerError,
+            Type = "https://tools.ietf.org/html/rfc9110#section-15.6.1",
+            Title = "An unexpected error occurred",
+            Status = StatusCodes.Status500InternalServerError,
             ErrorCode = "INTERNAL_SERVER_ERROR",
-            Message = "An unexpected error occurred while processing your request.",
+            Detail = "An unexpected error occurred while processing your request.",
             TraceId = traceId,
             Timestamp = DateTimeOffset.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")
         };

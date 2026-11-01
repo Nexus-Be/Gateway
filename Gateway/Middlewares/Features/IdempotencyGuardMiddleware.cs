@@ -29,15 +29,16 @@ public sealed class IdempotencyGuardMiddleware
                 if (string.IsNullOrWhiteSpace(keyValue) || keyValue.Length > 128)
                 {
                     context.Response.StatusCode = StatusCodes.Status400BadRequest;
-                    context.Response.ContentType = "application/json";
+                    context.Response.ContentType = "application/problem+json";
 
                     var traceId = Activity.Current?.Id ?? context.TraceIdentifier;
                     var errorResponse = new ApiErrorResponse
                     {
-                        Success = false,
-                        StatusCode = StatusCodes.Status400BadRequest,
+                        Type = "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+                        Title = "Validation error",
+                        Status = StatusCodes.Status400BadRequest,
                         ErrorCode = "VAL_INVALID_INPUT",
-                        Message = "Idempotency-Key header value is invalid or exceeds maximum length.",
+                        Detail = "Idempotency-Key header value is invalid or exceeds maximum length.",
                         TraceId = traceId,
                         Timestamp = DateTimeOffset.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")
                     };

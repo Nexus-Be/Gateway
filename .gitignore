@@ -35,3 +35,14 @@ appsettings.Local.json
 appsettings.Production.json
 !appsettings.example.json
 !appsettings.Development.example.json
+
+## AI Agents & Local Customizations
+.agents/*
+!.agents/AGENTS.md
+!.agents/rules/
+!.agents/rules/**
+!.agents/skills/
+!.agents/skills/**
+.agents/plan/
+.agents/history/
+

@@ -49,15 +49,21 @@ public sealed class AdminAuthorizationGuardMiddleware
     private static async Task WriteErrorAsync(HttpContext context, int statusCode, string errorCode, string message)
     {
         context.Response.StatusCode = statusCode;
-        context.Response.ContentType = "application/json";
+        context.Response.ContentType = "application/problem+json";
 
         var traceId = Activity.Current?.Id ?? context.TraceIdentifier;
+        var title = statusCode == StatusCodes.Status401Unauthorized ? "Unauthorized" : "Forbidden";
+        var type = statusCode == StatusCodes.Status401Unauthorized
+            ? "https://tools.ietf.org/html/rfc9110#section-15.5.3"
+            : "https://tools.ietf.org/html/rfc9110#section-15.5.4";
+
         var errorResponse = new ApiErrorResponse
         {
-            Success = false,
-            StatusCode = statusCode,
+            Type = type,
+            Title = title,
+            Status = statusCode,
             ErrorCode = errorCode,
-            Message = message,
+            Detail = message,
             TraceId = traceId,
             Timestamp = DateTimeOffset.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")
         };

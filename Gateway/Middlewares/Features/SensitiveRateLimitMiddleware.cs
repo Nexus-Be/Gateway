@@ -87,16 +87,17 @@ public sealed class SensitiveRateLimitMiddleware
             _logger.LogWarning("Strict rate limit exceeded for {Route} from {IP}. Count: {Count}", routeKey, clientIp, currentCount);
 
             context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
-            context.Response.ContentType = "application/json";
+            context.Response.ContentType = "application/problem+json";
             context.Response.Headers.RetryAfter = Math.Max(1, remainingSeconds).ToString();
 
             var traceId = Activity.Current?.Id ?? context.TraceIdentifier;
             var errorResponse = new ApiErrorResponse
             {
-                Success = false,
-                StatusCode = StatusCodes.Status429TooManyRequests,
+                Type = "https://tools.ietf.org/html/rfc9110#section-15.5.21",
+                Title = "Too many requests",
+                Status = StatusCodes.Status429TooManyRequests,
                 ErrorCode = "RATE_LIMIT_EXCEEDED",
-                Message = "Too many requests. Please slow down and try again later.",
+                Detail = "Too many requests. Please slow down and try again later.",
                 TraceId = traceId,
                 Timestamp = DateTimeOffset.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")
             };

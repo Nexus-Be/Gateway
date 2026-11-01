@@ -67,14 +67,15 @@ public sealed class ClientContextMiddleware
                     headerKey, clientIp, traceId, context.Request.Path);
 
                 context.Response.StatusCode = StatusCodes.Status403Forbidden;
-                context.Response.ContentType = "application/json";
+                context.Response.ContentType = "application/problem+json";
 
                 var errorResponse = new ApiErrorResponse
                 {
-                    Success = false,
-                    StatusCode = StatusCodes.Status403Forbidden,
+                    Type = "https://tools.ietf.org/html/rfc9110#section-15.5.4",
+                    Title = "Forbidden",
+                    Status = StatusCodes.Status403Forbidden,
                     ErrorCode = "FORBIDDEN_HEADER_SPOOFING",
-                    Message = "Security violation: Untrusted identity header detected in external request.",
+                    Detail = "Security violation: Untrusted identity header detected in external request.",
                     TraceId = traceId,
                     Timestamp = DateTimeOffset.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")
                 };

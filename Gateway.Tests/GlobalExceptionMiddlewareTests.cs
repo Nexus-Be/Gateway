@@ -28,7 +28,7 @@ public sealed class GlobalExceptionMiddlewareTests
 
         // Assert
         context.Response.StatusCode.Should().Be(StatusCodes.Status500InternalServerError);
-        context.Response.ContentType.Should().Contain("application/json");
+        context.Response.ContentType.Should().Be("application/problem+json");
 
         context.Response.Body.Position = 0;
         using var reader = new StreamReader(context.Response.Body);
@@ -37,10 +37,11 @@ public sealed class GlobalExceptionMiddlewareTests
         using var doc = JsonDocument.Parse(body);
         var root = doc.RootElement;
 
-        root.GetProperty("success").GetBoolean().Should().BeFalse();
-        root.GetProperty("statusCode").GetInt32().Should().Be(500);
+        root.GetProperty("status").GetInt32().Should().Be(500);
+        root.GetProperty("title").GetString().Should().Be("An unexpected error occurred");
         root.GetProperty("errorCode").GetString().Should().Be("INTERNAL_SERVER_ERROR");
-        root.GetProperty("message").GetString().Should().Be("An unexpected error occurred while processing your request.");
+        root.GetProperty("detail").GetString().Should().Be("An unexpected error occurred while processing your request.");
+        root.GetProperty("type").GetString().Should().Contain("rfc9110");
         root.TryGetProperty("traceId", out _).Should().BeTrue();
         root.TryGetProperty("timestamp", out _).Should().BeTrue();
     }

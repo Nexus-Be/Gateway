@@ -34,18 +34,20 @@ public class ApiResponse<T>
 
 public sealed class ApiErrorResponse
 {
-    [JsonPropertyName("success")]
-    public bool Success { get; init; } = false;
+    [JsonPropertyName("type")]
+    public string Type { get; init; } = "https://tools.ietf.org/html/rfc9110#section-15.5.1";
 
-    [JsonPropertyName("statusCode")]
-    public int StatusCode { get; init; } = 400;
+    [JsonPropertyName("title")]
+    public string Title { get; init; } = "One or more validation errors occurred.";
+
+    [JsonPropertyName("status")]
+    public int Status { get; init; } = 400;
 
     [JsonPropertyName("errorCode")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? ErrorCode { get; init; }
+    public string ErrorCode { get; init; } = "";
 
-    [JsonPropertyName("message")]
-    public string Message { get; init; } = "";
+    [JsonPropertyName("detail")]
+    public string Detail { get; init; } = "";
 
     [JsonPropertyName("errors")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]

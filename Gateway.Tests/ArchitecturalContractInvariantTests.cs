@@ -57,9 +57,10 @@ public sealed class ArchitecturalContractInvariantTests
 
         using var doc = JsonDocument.Parse(responseBody);
         var root = doc.RootElement;
-        root.GetProperty("success").GetBoolean().Should().BeFalse();
-        root.GetProperty("statusCode").GetInt32().Should().Be(403);
+        root.GetProperty("status").GetInt32().Should().Be(403);
+        root.GetProperty("title").GetString().Should().Be("Forbidden");
         root.GetProperty("errorCode").GetString().Should().Be("FORBIDDEN_HEADER_SPOOFING");
+        root.GetProperty("detail").GetString().Should().Contain("Security violation");
     }
 
     [Theory]
