@@ -1,6 +1,7 @@
 namespace Gateway.Transforms;
 
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -26,12 +27,18 @@ public static class IdentityPropagationTransform
             proxyRequest.Headers.Remove("x-client-ip");
             proxyRequest.Headers.TryAddWithoutValidation("x-client-ip", clientIp);
 
-            // 2. Forward Trace Identifier
+            // 2. Forward Trace Identifier & W3C TraceContext
             var traceId = httpContext.Items[ClientContextMiddleware.ItemKeyTraceId]?.ToString()
                 ?? httpContext.TraceIdentifier;
 
             proxyRequest.Headers.Remove("x-trace-id");
             proxyRequest.Headers.TryAddWithoutValidation("x-trace-id", traceId);
+
+            if (Activity.Current != null && !string.IsNullOrWhiteSpace(Activity.Current.Id))
+            {
+                proxyRequest.Headers.Remove("traceparent");
+                proxyRequest.Headers.TryAddWithoutValidation("traceparent", Activity.Current.Id);
+            }
 
             // 3. Forward Authenticated User Claims
             if (httpContext.User.Identity?.IsAuthenticated == true)

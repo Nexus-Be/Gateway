@@ -41,6 +41,9 @@ builder.Services.AddCors(options =>
 // 3. Swagger / OpenAPI aggregation
 builder.Services.AddGatewaySwagger();
 
+// 3.1 Distributed Tracing & Observability (OpenTelemetry -> Tempo)
+builder.Services.AddGatewayObservability(builder.Configuration);
+
 // 4. JWT Authentication
 var jwtConfig = builder.Configuration.GetSection("Jwt");
 var signature = Environment.GetEnvironmentVariable("JWT_SIGNATURE")

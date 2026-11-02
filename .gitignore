@@ -45,4 +45,5 @@ appsettings.Production.json
 !.agents/skills/**
 .agents/plan/
 .agents/history/
+.agents/review/
 

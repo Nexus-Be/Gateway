@@ -23,6 +23,7 @@ description: Add or modify downstream routing clusters and identity propagation 
    - Gateway verifies JWT at the edge and securely injects validated claims into downstream headers (`x-user-id`, `x-user-roles`) via `AddIdentityPropagation()`.
 3. **Plural Route Convention:** Downstream routes must match 100% plural domain paths (`/api/v1/users/**`, `/api/v1/wallets/**`, etc.).
 4. **Internal Routes Prohibited:** Never configure YARP routes for `/api/v1/internal/*`.
+5. **W3C Distributed Tracing Propagation:** Gateway must register OpenTelemetry and export spans to Tempo (`4317`). Incoming `traceparent` headers must be propagated downstream or generated if absent (`00-{traceId}-{spanId}-01`), ensuring end-to-end distributed tracing across all clusters.
 
 ## Downstream Cluster Configuration Example
 
