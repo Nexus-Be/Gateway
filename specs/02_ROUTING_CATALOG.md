@@ -35,12 +35,16 @@ One route per public resource prefix. Every route uses a single `{**catch-all}` 
 | `admin-seller-registrations-route` | `/api/v1/admin/seller-registrations/{**catch-all}` | `user-cluster` | `GET /api/v1/admin/seller-registrations`, `PUT .../{id}/approve` |
 | `categories-route` | `/api/v1/categories/{**catch-all}` | `catalog-cluster` | `GET /api/v1/categories`, `GET /api/v1/categories/{id}` |
 | `products-route` | `/api/v1/products/{**catch-all}` | `catalog-cluster` | `GET /api/v1/products`, `GET /api/v1/products/{id}` |
+| `variants-route` | `/api/v1/variants/{**catch-all}` | `catalog-cluster` | `GET /api/v1/variants/{id}`, `PUT /api/v1/variants/{id}` |
+| `images-route` | `/api/v1/images/{**catch-all}` | `catalog-cluster` | `PATCH /api/v1/images/{id}`, `DELETE /api/v1/images/{id}` |
+| `seller-products-route` | `/api/v1/seller/products/{**catch-all}` | `catalog-cluster` | `GET /api/v1/seller/products` |
 | `carts-route` | `/api/v1/carts/{**catch-all}` | `commerce-cluster` | `GET /api/v1/carts/active` |
 | `orders-route` | `/api/v1/orders/{**catch-all}` | `commerce-cluster` | `GET /api/v1/orders/{id}`, `GET /api/v1/orders/buyer/{buyerId}` |
 | `logs-route` | `/api/v1/logs/{**catch-all}` | `log-cluster` | `GET /api/v1/logs`, `GET /api/v1/logs/event-types` |
 | `auctions-route` | `/api/v1/auctions/{**catch-all}` | `auction-cluster` | `GET /api/v1/auctions`, `GET /api/v1/auctions/{id}/bids` |
 | `warehouses-route` | `/api/v1/warehouses/{**catch-all}` | `fulfillment-cluster` | `GET /api/v1/warehouses`, `GET /api/v1/warehouses/{id}` |
 | `shipments-route` | `/api/v1/shipments/{**catch-all}` | `fulfillment-cluster` | `GET /api/v1/shipments/tracking/{trackingNumber}` |
+| `inventories-route` | `/api/v1/inventories/{**catch-all}` | `fulfillment-cluster` | `POST /api/v1/inventories/initialize`, `GET /api/v1/inventories/{skuId}` |
 | `notifications-route` | `/api/v1/notifications/{**catch-all}` | `notification-cluster` | `GET /api/v1/notifications/me`, `GET /api/v1/notifications/preferences` |
 | `admin-notifications-route` | `/api/v1/admin/notifications/{**catch-all}` | `notification-cluster` | `GET /api/v1/admin/notifications` |
 | `admin-notifications-health-route` | `/api/v1/admin/health/{**catch-all}` | `notification-cluster` | `GET /api/v1/admin/health/broker` |
