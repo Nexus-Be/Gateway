@@ -19,7 +19,9 @@ public sealed class ResponseEnvelopeMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
-        if (context.Request.Path.StartsWithSegments("/swagger", StringComparison.OrdinalIgnoreCase))
+        // 0. Skip envelope for Swagger docs and third-party webhooks requiring flat protocol payloads
+        if (context.Request.Path.StartsWithSegments("/swagger", StringComparison.OrdinalIgnoreCase) ||
+            context.Request.Path.StartsWithSegments("/api/v1/wallets/vnpay/ipn", StringComparison.OrdinalIgnoreCase))
         {
             await _next(context);
             return;

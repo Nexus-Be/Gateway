@@ -85,13 +85,38 @@ public sealed class ClientContextMiddleware
             }
         }
 
-        // 4. Internal API path blocking is temporarily disabled. Inter-service routes are plain REST paths.
+        // 4. Block external access to notification email endpoints
+        if (context.Request.Path.StartsWithSegments("/api/v1/notifications/email", StringComparison.OrdinalIgnoreCase))
+        {
+            _logger?.LogWarning(
+                "[SECURITY VIOLATION] Blocked external access to email endpoint from Client IP: '{ClientIp}', TraceId: '{TraceId}', Path: '{Path}'",
+                clientIp, traceId, context.Request.Path);
+
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            context.Response.ContentType = "application/problem+json";
+
+            var forbiddenResponse = new ApiErrorResponse
+            {
+                Type = "https://tools.ietf.org/html/rfc9110#section-15.5.4",
+                Title = "Forbidden",
+                Status = StatusCodes.Status403Forbidden,
+                ErrorCode = "FORBIDDEN_INTERNAL_ONLY",
+                Detail = "Access to notification email endpoints from external gateway is forbidden.",
+                TraceId = traceId,
+                Timestamp = DateTimeOffset.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")
+            };
+
+            await context.Response.WriteAsync(JsonSerializer.Serialize(forbiddenResponse));
+            return;
+        }
+
+        // 5. Internal API path blocking is temporarily disabled. Inter-service routes are plain REST paths.
         // if (context.Request.Path.StartsWithSegments("/api/v1/internal", StringComparison.OrdinalIgnoreCase) ||
         //     context.Request.Path.Value?.Contains("/internal/", StringComparison.OrdinalIgnoreCase) == true)
         // {
         //     context.Response.StatusCode = StatusCodes.Status404NotFound;
         //     context.Response.ContentType = "application/json";
-
+        //
         //     var notFoundResponse = new ApiErrorResponse
         //     {
         //         Success = false,
@@ -101,12 +126,12 @@ public sealed class ClientContextMiddleware
         //         TraceId = traceId,
         //         Timestamp = DateTimeOffset.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")
         //     };
-
+        //
         //     await context.Response.WriteAsync(JsonSerializer.Serialize(notFoundResponse));
         //     return;
         // }
 
-        // 5. Inject security and tracking headers on response start
+        // 6. Inject security and tracking headers on response start
         context.Response.OnStarting(() =>
         {
             context.Response.Headers["X-Trace-Id"] = traceId;
