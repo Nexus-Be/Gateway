@@ -36,7 +36,28 @@ public sealed class RouteCatalogConfigurationTests
     [InlineData("admin-users-route", "/api/v1/admin/users/{**catch-all}", "user-cluster")]
     [InlineData("admin-roles-route", "/api/v1/admin/roles/{**catch-all}", "user-cluster")]
     [InlineData("admin-seller-registrations-route", "/api/v1/admin/seller-registrations/{**catch-all}", "user-cluster")]
+    [InlineData("admin-sellers-route", "/api/v1/admin/sellers/{**catch-all}", "user-cluster")]
+    [InlineData("admin-penalties-route", "/api/v1/admin/penalties/{**catch-all}", "user-cluster")]
+    [InlineData("admin-reports-route", "/api/v1/admin/reports/{**catch-all}", "user-cluster")]
+    [InlineData("admin-reviews-route", "/api/v1/admin/reviews/{**catch-all}", "user-cluster")]
+    [InlineData("admin-configs-route", "/api/v1/admin/configs/{**catch-all}", "user-cluster")]
+    [InlineData("reputation-route", "/api/v1/reputation/{**catch-all}", "user-cluster")]
+    [InlineData("reviews-route", "/api/v1/reviews/{**catch-all}", "user-cluster")]
     public async Task UserRoutes_AreConfiguredCorrectly_InReverseProxy(string routeId, string expectedPath, string expectedCluster)
+    {
+        await using var factory = new WebApplicationFactory<Program>();
+        var proxyConfigProvider = factory.Services.GetRequiredService<IProxyConfigProvider>();
+        var proxyConfig = proxyConfigProvider.GetConfig();
+
+        var route = proxyConfig.Routes.FirstOrDefault(r => r.RouteId == routeId);
+        route.Should().NotBeNull($"Route '{routeId}' must be configured in Gateway YARP reverse proxy");
+        route!.ClusterId.Should().Be(expectedCluster);
+        route.Match.Path.Should().Be(expectedPath);
+    }
+
+    [Theory]
+    [InlineData("webhooks-ghn-route", "/api/v1/webhooks/ghn/{**catch-all}", "fulfillment-cluster")]
+    public async Task FulfillmentWebhookRoute_IsConfiguredCorrectly_InReverseProxy(string routeId, string expectedPath, string expectedCluster)
     {
         await using var factory = new WebApplicationFactory<Program>();
         var proxyConfigProvider = factory.Services.GetRequiredService<IProxyConfigProvider>();

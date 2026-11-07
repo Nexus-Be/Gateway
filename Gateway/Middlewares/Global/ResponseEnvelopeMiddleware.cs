@@ -1,4 +1,4 @@
-namespace Gateway.Middlewares.Global;
+﻿namespace Gateway.Middlewares.Global;
 
 using System;
 using System.Diagnostics;
@@ -21,7 +21,8 @@ public sealed class ResponseEnvelopeMiddleware
     {
         // 0. Skip envelope for Swagger docs and third-party webhooks requiring flat protocol payloads
         if (context.Request.Path.StartsWithSegments("/swagger", StringComparison.OrdinalIgnoreCase) ||
-            context.Request.Path.StartsWithSegments("/api/v1/wallets/vnpay/ipn", StringComparison.OrdinalIgnoreCase))
+            context.Request.Path.StartsWithSegments("/api/v1/wallets/vnpay/ipn", StringComparison.OrdinalIgnoreCase) ||
+            context.Request.Path.StartsWithSegments("/api/v1/webhooks/ghn", StringComparison.OrdinalIgnoreCase))
         {
             await _next(context);
             return;

@@ -34,6 +34,12 @@ One route per public resource prefix. Every route uses a `{**catch-all}` pattern
 | `admin-roles-route` | `/api/v1/admin/roles/{**catch-all}` | `user-cluster` | `GET /api/v1/admin/roles` |
 | `admin-seller-registrations-route` | `/api/v1/admin/seller-registrations/{**catch-all}` | `user-cluster` | `GET /api/v1/admin/seller-registrations`, `PUT .../{id}/approve` |
 | `admin-sellers-route` | `/api/v1/admin/sellers/{**catch-all}` | `user-cluster` | `GET /api/v1/admin/sellers/{sellerId}` |
+| `admin-penalties-route` | `/api/v1/admin/penalties/{**catch-all}` | `user-cluster` | `GET /api/v1/admin/penalties`, `PUT .../{id}/revoke` |
+| `admin-reports-route` | `/api/v1/admin/reports/{**catch-all}` | `user-cluster` | `GET /api/v1/admin/reports`, `PUT .../{id}/resolve` |
+| `admin-reviews-route` | `/api/v1/admin/reviews/{**catch-all}` | `user-cluster` | `PUT /api/v1/admin/reviews/{id}/hide` |
+| `admin-configs-route` | `/api/v1/admin/configs/{**catch-all}` | `user-cluster` | `GET /api/v1/admin/configs`, `PUT /api/v1/admin/configs` |
+| `reputation-route` | `/api/v1/reputation/{**catch-all}` | `user-cluster` | `GET /api/v1/reputation/policy` |
+| `reviews-route` | `/api/v1/reviews/{**catch-all}` | `user-cluster` | `POST /api/v1/reviews` |
 | `categories-route` | `/api/v1/categories/{**catch-all}` | `catalog-cluster` | `GET /api/v1/categories`, `GET /api/v1/categories/{id}` |
 | `products-route` | `/api/v1/products/{**catch-all}` | `catalog-cluster` | `GET /api/v1/products`, `GET /api/v1/products/{id}` |
 | `variants-route` | `/api/v1/variants/{**catch-all}` | `catalog-cluster` | `GET /api/v1/variants/{id}`, `PUT /api/v1/variants/{id}` |
@@ -49,6 +55,7 @@ One route per public resource prefix. Every route uses a `{**catch-all}` pattern
 | `inventories-route` | `/api/v1/inventories/{**catch-all}` | `fulfillment-cluster` | `POST /api/v1/inventories/initialize`, `GET .../{skuId}` |
 | `commerce-shipments-order-route` | `/api/v1/shipments/order/{**catch-all}` | `commerce-cluster` | `GET /api/v1/shipments/order/{orderId}` |
 | `shipments-route` | `/api/v1/shipments/{**catch-all}` | `fulfillment-cluster` | `GET /api/v1/shipments/tracking/{trackingNumber}` |
+| `webhooks-ghn-route` | `/api/v1/webhooks/ghn/{**catch-all}` | `fulfillment-cluster` | `POST /api/v1/webhooks/ghn` (GHN carrier callbacks) |
 | `notifications-route` | `/api/v1/notifications/{**catch-all}` | `notification-cluster` | `GET /api/v1/notifications/me`, `GET /api/v1/notifications/preferences` |
 | `admin-notifications-route` | `/api/v1/admin/notifications/{**catch-all}` | `notification-cluster` | `GET /api/v1/admin/notifications` |
 | `admin-notifications-health-route` | `/api/v1/admin/health/{**catch-all}` | `notification-cluster` | `GET /api/v1/admin/health/broker` |
@@ -67,4 +74,4 @@ One route per public resource prefix. Every route uses a `{**catch-all}` pattern
 4. **Admin is partitioned by domain.** `/api/v1/admin/users`, `/api/v1/admin/roles`, `/api/v1/admin/sellers`, `/api/v1/admin/wallets`, `/api/v1/admin/notifications`, and `/api/v1/admin/health` each reach their own cluster. A single `/api/v1/admin/{**catch-all}` route to UserService is prohibited.
 5. **Internal APIs never appear here.** No YARP route targets `/internal/`. External calls to `/api/v1/notifications/email/**` are blocked at Gateway with 403 Forbidden.
 6. **Gateway-local `/health`.** `Program.cs` maps its own `GET /health` endpoint, which takes precedence over `health-route`. Only the deeper probes proxy to CheckHeal.
-7. **Webhook envelope bypass.** Third-party webhooks requiring flat responses (e.g. `/api/v1/wallets/vnpay/ipn`) bypass `ResponseEnvelopeMiddleware` to return the downstream provider's native payload directly.
+7. **Webhook envelope bypass.** Third-party webhooks requiring flat responses (e.g. `/api/v1/wallets/vnpay/ipn`, `/api/v1/webhooks/ghn`) bypass `ResponseEnvelopeMiddleware` to return the downstream provider's native payload directly.
