@@ -89,6 +89,14 @@ public static class IdentityPropagationTransform
                     proxyRequest.Headers.Remove("x-user-permissions");
                     proxyRequest.Headers.TryAddWithoutValidation("x-user-permissions", string.Join(",", permissions));
                 }
+
+                var sessionId = user.FindFirst("sid")?.Value;
+
+                if (!string.IsNullOrWhiteSpace(sessionId))
+                {
+                    proxyRequest.Headers.Remove("x-session-id");
+                    proxyRequest.Headers.TryAddWithoutValidation("x-session-id", sessionId);
+                }
             }
 
             // 4. Forward Idempotency Key if validated

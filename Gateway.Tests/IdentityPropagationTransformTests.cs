@@ -34,7 +34,8 @@ public sealed class IdentityPropagationTransformTests
             new Claim(ClaimTypes.NameIdentifier, "11111111-1111-1111-1111-111111111111"),
             new Claim(ClaimTypes.Email, "buyer@example.com"),
             new Claim(ClaimTypes.Role, "buyer"),
-            new Claim("permission", "ORDER_CREATE")
+            new Claim("permission", "ORDER_CREATE"),
+            new Claim("sid", "33333333-3333-3333-3333-333333333333")
         };
         httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
 
@@ -55,6 +56,7 @@ public sealed class IdentityPropagationTransformTests
         proxyRequest.Headers.GetValues("x-user-email").Should().ContainSingle().Which.Should().Be("buyer@example.com");
         proxyRequest.Headers.GetValues("x-user-roles").Should().ContainSingle().Which.Should().Be("buyer");
         proxyRequest.Headers.GetValues("x-user-permissions").Should().ContainSingle().Which.Should().Be("ORDER_CREATE");
+        proxyRequest.Headers.GetValues("x-session-id").Should().ContainSingle().Which.Should().Be("33333333-3333-3333-3333-333333333333");
         proxyRequest.Headers.GetValues("Idempotency-Key").Should().ContainSingle().Which.Should().Be("idemp-999");
     }
 

@@ -17,6 +17,8 @@ public sealed class RouteCatalogConfigurationTests
     [InlineData("images-route", "/api/v1/images/{**catch-all}", "catalog-cluster")]
     [InlineData("seller-products-route", "/api/v1/seller/products/{**catch-all}", "catalog-cluster")]
     [InlineData("admin-products-route", "/api/v1/admin/products/{**catch-all}", "catalog-cluster")]
+    [InlineData("admin-product-reports-route", "/api/v1/admin/reports/products/{**catch-all}", "catalog-cluster")]
+    [InlineData("admin-product-reviews-moderate-route", "/api/v1/admin/reviews/{id}/moderate", "catalog-cluster")]
     public async Task CatalogRoutes_AreConfiguredCorrectly_InReverseProxy(string routeId, string expectedPath, string expectedCluster)
     {
         await using var factory = new WebApplicationFactory<Program>();
@@ -41,6 +43,7 @@ public sealed class RouteCatalogConfigurationTests
     [InlineData("admin-penalties-route", "/api/v1/admin/penalties/{**catch-all}", "user-cluster")]
     [InlineData("admin-reports-route", "/api/v1/admin/reports/{**catch-all}", "user-cluster")]
     [InlineData("admin-reviews-route", "/api/v1/admin/reviews/{**catch-all}", "user-cluster")]
+    [InlineData("reports-route", "/api/v1/reports/{**catch-all}", "user-cluster")]
     [InlineData("admin-configs-route", "/api/v1/admin/configs/{**catch-all}", "user-cluster")]
     [InlineData("reputation-route", "/api/v1/reputation/{**catch-all}", "user-cluster")]
     [InlineData("reviews-route", "/api/v1/reviews/{**catch-all}", "user-cluster")]
@@ -79,6 +82,7 @@ public sealed class RouteCatalogConfigurationTests
     [InlineData("auction-me-offers-route", "/api/v1/me/auction-offers/{**catch-all}", "auction-cluster")]
     [InlineData("auction-settlements-route", "/api/v1/auction-settlements/{**catch-all}", "auction-cluster")]
     [InlineData("admin-auctions-route", "/api/v1/admin/auctions/{**catch-all}", "auction-cluster")]
+    [InlineData("seller-auction-statistics-route", "/api/v1/sellers/{sellerId}/auction-statistics", "auction-cluster")]
     public async Task AuctionRoutes_AreConfiguredCorrectly_InReverseProxy(string routeId, string expectedPath, string expectedCluster)
     {
         await using var factory = new WebApplicationFactory<Program>();

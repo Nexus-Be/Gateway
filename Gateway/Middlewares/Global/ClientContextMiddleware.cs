@@ -26,6 +26,7 @@ public sealed class ClientContextMiddleware
         "x-user-role",
         "x-user-permissions",
         "x-user-permission",
+        "x-session-id",
         HeaderKeyInternalService
     };
 

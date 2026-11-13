@@ -30,6 +30,7 @@ public sealed class ArchitecturalContractInvariantTests
     [InlineData("x-user-role", "admin")]
     [InlineData("x-user-permissions", "ALL_PERMISSIONS")]
     [InlineData("x-user-permission", "SUPER_ADMIN")]
+    [InlineData("x-session-id", "forged-session-guid")]
     [InlineData("x-internal-service-key", "forged-secret-key")]
     [InlineData("X-Internal-Service-Key", "forged-secret-key")]
     public async Task Invariant_AntiHeaderSpoofing_AbortsPipeline_With403ForbiddenHeaderSpoofing(string headerKey, string headerValue)
