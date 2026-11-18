@@ -95,6 +95,115 @@ public sealed class RouteCatalogConfigurationTests
         route.Match.Path.Should().Be(expectedPath);
     }
 
+    /// <summary>
+    /// /api/v1/admin/reviews/{id}/moderate belongs to CatalogService (product reviews) but sits under the /api/v1/admin/reviews catch-all of
+    /// UserService. With a higher Order number it was evaluated after the catch-all and never reached Catalog.
+    /// </summary>
+    [Fact]
+    public async Task ProductReviewModeration_IsEvaluatedBeforeTheAdminReviewsCatchAll()
+    {
+        await using var factory = new WebApplicationFactory<Program>();
+        var routes = factory.Services.GetRequiredService<IProxyConfigProvider>().GetConfig().Routes;
+
+        var moderate = routes.First(r => r.RouteId == "admin-product-reviews-moderate-route");
+        var catchAll = routes.First(r => r.RouteId == "admin-reviews-route");
+
+        moderate.ClusterId.Should().Be("catalog-cluster");
+        (moderate.Order ?? 0).Should().BeLessThan(catchAll.Order ?? 0);
+    }
+
+    /// <summary>
+    /// /api/v1/admin/reports/products belongs to CatalogService but sits under the /api/v1/admin/reports catch-all of UserService.
+    /// With a higher Order number it was evaluated after the catch-all and every call ended in a 404 from UserService.
+    /// </summary>
+    [Fact]
+    public async Task ProductReportModeration_IsEvaluatedBeforeTheAdminReportsCatchAll()
+    {
+        await using var factory = new WebApplicationFactory<Program>();
+        var routes = factory.Services.GetRequiredService<IProxyConfigProvider>().GetConfig().Routes;
+
+        var productReports = routes.First(r => r.RouteId == "admin-product-reports-route");
+        var catchAll = routes.First(r => r.RouteId == "admin-reports-route");
+
+        productReports.ClusterId.Should().Be("catalog-cluster");
+        (productReports.Order ?? 0).Should().BeLessThan(catchAll.Order ?? 0);
+    }
+
+    /// <summary>
+    /// Product reviews live in CatalogService (PUT and DELETE /api/v1/reviews/{id}); partner reviews live in UserService
+    /// (POST /api/v1/reviews, its upload and eligibility routes). One path prefix, two services: only the method and the GUID tell them apart.
+    /// </summary>
+    [Fact]
+    public async Task ProductReviewEditAndDelete_GoToCatalog_AndEverythingElseUnderReviewsStaysWithUser()
+    {
+        await using var factory = new WebApplicationFactory<Program>();
+        var routes = factory.Services.GetRequiredService<IProxyConfigProvider>().GetConfig().Routes;
+
+        var productReviews = routes.FirstOrDefault(r => r.RouteId == "catalog-review-by-id-route");
+        var partnerReviews = routes.First(r => r.RouteId == "reviews-route");
+
+        productReviews.Should().NotBeNull();
+        productReviews!.ClusterId.Should().Be("catalog-cluster");
+        productReviews.Match.Path.Should().Be("/api/v1/reviews/{id:guid}");
+        productReviews.Match.Methods.Should().BeEquivalentTo(new[] { "PUT", "DELETE" });   // never POST, GET or the upload
+        (productReviews.Order ?? 0).Should().BeLessThan(partnerReviews.Order ?? 0,
+            "YARP evaluates lower numbers first, so the narrower route must come before the /reviews catch-all");
+        partnerReviews.ClusterId.Should().Be("user-cluster");
+        partnerReviews.Match.Path.Should().Be("/api/v1/reviews/{**catch-all}");
+    }
+
+    [Theory]
+    [InlineData("auction-orders-route", "/api/v1/auction-orders/{auctionOrderId:guid}/{**catch-all}", "commerce-cluster")]
+    [InlineData("auction-orders-me-route", "/api/v1/auction-orders/me", "commerce-cluster")]
+    [InlineData("auction-orders-seller-route", "/api/v1/auction-orders/seller", "commerce-cluster")]
+    [InlineData("discounts-route", "/api/v1/discounts/{**catch-all}", "commerce-cluster")]
+    [InlineData("admin-platform-fee-route", "/api/v1/admin/platform-fee/{**catch-all}", "commerce-cluster")]
+    [InlineData("shipping-locations-route", "/api/v1/shipping/locations/{**catch-all}", "fulfillment-cluster")]
+    [InlineData("auction-hub-route", "/hubs/auctions/{**catch-all}", "auction-cluster")]
+    public async Task AuctionOrderAndMissingRoutes_AreConfiguredCorrectly_InReverseProxy(string routeId, string expectedPath, string expectedCluster)
+    {
+        await using var factory = new WebApplicationFactory<Program>();
+        var proxyConfig = factory.Services.GetRequiredService<IProxyConfigProvider>().GetConfig();
+
+        var route = proxyConfig.Routes.FirstOrDefault(r => r.RouteId == routeId);
+        route.Should().NotBeNull($"Route '{routeId}' must be configured in Gateway YARP reverse proxy");
+        route!.ClusterId.Should().Be(expectedCluster);
+        route.Match.Path.Should().Be(expectedPath);
+    }
+
+    [Fact]
+    public async Task SellerAuctionStatistics_IsEvaluatedBeforeSellersCatchAll()
+    {
+        await using var factory = new WebApplicationFactory<Program>();
+        var routes = factory.Services.GetRequiredService<IProxyConfigProvider>().GetConfig().Routes;
+
+        var statsRoute = routes.First(r => r.RouteId == "seller-auction-statistics-route");
+        var sellersRoute = routes.First(r => r.RouteId == "sellers-route");
+
+        statsRoute.ClusterId.Should().Be("auction-cluster");
+        (statsRoute.Order ?? 0).Should().BeLessThan(sellersRoute.Order ?? 0);
+    }
+
+    /// <summary>
+    /// The settlement endpoint is called by AuctionService only. No route may forward it, so a client cannot create an auction order.
+    /// </summary>
+    [Fact]
+    public async Task AuctionOrderSettlement_IsNotExposedThroughGateway()
+    {
+        await using var factory = new WebApplicationFactory<Program>();
+        var proxyConfig = factory.Services.GetRequiredService<IProxyConfigProvider>().GetConfig();
+
+        proxyConfig.Routes
+            .Where(r => r.ClusterId == "commerce-cluster")
+            .Select(r => r.Match.Path)
+            .Should().NotContain(path => path != null && path.StartsWith("/api/v1/auction-orders/{**", System.StringComparison.Ordinal),
+                "a catch-all on /api/v1/auction-orders would forward POST /api/v1/auction-orders/settlement");
+
+        var client = factory.CreateClient();
+        var response = await client.PostAsync("/api/v1/auction-orders/settlement", new System.Net.Http.StringContent("{}"));
+        response.StatusCode.Should().Be(System.Net.HttpStatusCode.NotFound);
+    }
+
     [Fact]
     public async Task ProxyClusters_ContainCatalogAndUserClusters()
     {

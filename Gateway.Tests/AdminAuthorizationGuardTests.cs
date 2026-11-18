@@ -107,4 +107,71 @@ public sealed class AdminAuthorizationGuardTests
         // Assert
         calledNext.Should().BeTrue();
     }
+
+    [Theory]
+    [InlineData("/api/v1/auctions/7d7f0d8e-1111-4222-8333-944444444444/settlement")]
+    [InlineData("/api/v1/auctions/7d7f0d8e-1111-4222-8333-944444444444/settlement/payment-status")]
+    [InlineData("/API/V1/AUCTIONS/7d7f0d8e-1111-4222-8333-944444444444/Settlement/Payment-Status")]
+    public async Task InvokeAsync_ServiceOnlySettlementPath_IsNotForwardedEvenForAdmin(string path)
+    {
+        var calledNext = false;
+        var middleware = new AdminAuthorizationGuardMiddleware(_ => { calledNext = true; return Task.CompletedTask; });
+        var context = new DefaultHttpContext();
+        context.Request.Path = path;
+        context.Response.Body = new MemoryStream();
+        context.User = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Role, "admin") }, "TestAuth"));
+
+        await middleware.InvokeAsync(context);
+
+        calledNext.Should().BeFalse();
+        context.Response.StatusCode.Should().Be(StatusCodes.Status404NotFound);
+    }
+
+    [Theory]
+    [InlineData(null, StatusCodes.Status401Unauthorized)]
+    [InlineData("buyer", StatusCodes.Status403Forbidden)]
+    public async Task InvokeAsync_SettlementList_RequiresAdminOrStaff(string? role, int expectedStatus)
+    {
+        var calledNext = false;
+        var middleware = new AdminAuthorizationGuardMiddleware(_ => { calledNext = true; return Task.CompletedTask; });
+        var context = new DefaultHttpContext();
+        context.Request.Path = "/api/v1/auction-settlements";
+        context.Response.Body = new MemoryStream();
+        if (role is not null)
+            context.User = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Role, role) }, "TestAuth"));
+
+        await middleware.InvokeAsync(context);
+
+        calledNext.Should().BeFalse();
+        context.Response.StatusCode.Should().Be(expectedStatus);
+    }
+
+    [Theory]
+    [InlineData("staff")]
+    [InlineData("admin")]
+    public async Task InvokeAsync_SettlementList_AllowsAdminAndStaff(string role)
+    {
+        var calledNext = false;
+        var middleware = new AdminAuthorizationGuardMiddleware(_ => { calledNext = true; return Task.CompletedTask; });
+        var context = new DefaultHttpContext();
+        context.Request.Path = "/api/v1/auction-settlements";
+        context.User = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Role, role) }, "TestAuth"));
+
+        await middleware.InvokeAsync(context);
+
+        calledNext.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task InvokeAsync_PublicAuctionResult_IsStillForwarded()
+    {
+        var calledNext = false;
+        var middleware = new AdminAuthorizationGuardMiddleware(_ => { calledNext = true; return Task.CompletedTask; });
+        var context = new DefaultHttpContext();
+        context.Request.Path = "/api/v1/auctions/7d7f0d8e-1111-4222-8333-944444444444/result";
+
+        await middleware.InvokeAsync(context);
+
+        calledNext.Should().BeTrue();
+    }
 }

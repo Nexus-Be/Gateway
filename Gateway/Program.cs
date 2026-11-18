@@ -1,5 +1,6 @@
 using System;
 using System.Text;
+using Gateway.Authentication;
 using Gateway.Extensions;
 using Gateway.Middlewares.Features;
 using Gateway.Middlewares.Global;
@@ -26,14 +27,20 @@ builder.Host.UseSerilog((context, services, configuration) =>
         .WriteTo.Console();
 });
 
-// 2. CORS configuration
+// 2. CORS configuration (supports SignalR AllowCredentials; restricts to Cors:AllowedOrigins when configured)
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
+        if (allowedOrigins is { Length: > 0 })
+            policy.WithOrigins(allowedOrigins);
+        else
+            policy.SetIsOriginAllowed(_ => true);
+
+        policy.AllowAnyMethod()
               .AllowAnyHeader()
+              .AllowCredentials()
               .WithExposedHeaders("X-Trace-Id", "X-Content-Type-Options", "Retry-After");
     });
 });
@@ -61,10 +68,11 @@ var audience = Environment.GetEnvironmentVariable("JWT_AUDIENCE")
     ?? jwtConfig["Audience"]
     ?? "shoppingcart-api";
 
+Microsoft.AspNetCore.Authentication.AuthenticationBuilder authentication;
 if (!string.IsNullOrWhiteSpace(signature))
 {
     var key = Encoding.UTF8.GetBytes(signature);
-    builder.Services.AddAuthentication(options =>
+    authentication = builder.Services.AddAuthentication(options =>
     {
         options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
         options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -88,10 +96,13 @@ if (!string.IsNullOrWhiteSpace(signature))
 }
 else
 {
-    builder.Services.AddAuthentication();
+    authentication = builder.Services.AddAuthentication();
 }
 
+// The notifications that AuctionService sends carry their own service token (separate issuer, audience and key from the user scheme).
+authentication.AddAuctionNotificationServiceScheme();
 builder.Services.AddAuthorization();
+builder.Services.AddAuctionNotificationWritePolicy();
 
 // 5. Redis Connection
 var redisConnectionString = Environment.GetEnvironmentVariable("REDIS_CONNECTION_STRING")
@@ -115,7 +126,13 @@ catch (Exception)
 // 6. YARP Reverse Proxy
 builder.Services.AddReverseProxy()
     .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"))
-    .AddTransforms(b => b.AddIdentityPropagation());
+    .AddTransforms(b =>
+    {
+        if (string.Equals(b.Route.AuthorizationPolicy, AuctionNotificationServiceAuth.Policy, StringComparison.Ordinal))
+            b.AddServiceIdentityPropagation("auction-service");
+        else
+            b.AddIdentityPropagation();
+    });
 
 var app = builder.Build();
 
