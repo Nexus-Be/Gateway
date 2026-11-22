@@ -162,6 +162,8 @@ public sealed class RouteCatalogConfigurationTests
     [InlineData("auction-orders-seller-route", "/api/v1/auction-orders/seller", "commerce-cluster")]
     [InlineData("discounts-route", "/api/v1/discounts/{**catch-all}", "commerce-cluster")]
     [InlineData("admin-platform-fee-route", "/api/v1/admin/platform-fee/{**catch-all}", "commerce-cluster")]
+    [InlineData("refunds-route", "/api/v1/refunds/{**catch-all}", "commerce-cluster")]
+    [InlineData("admin-auction-reports-route", "/api/v1/admin/auction-reports/{**catch-all}", "auction-cluster")]
     [InlineData("shipping-locations-route", "/api/v1/shipping/locations/{**catch-all}", "fulfillment-cluster")]
     [InlineData("auction-hub-route", "/hubs/auctions/{**catch-all}", "auction-cluster")]
     public async Task AuctionOrderAndMissingRoutes_AreConfiguredCorrectly_InReverseProxy(string routeId, string expectedPath, string expectedCluster)
@@ -173,6 +175,30 @@ public sealed class RouteCatalogConfigurationTests
         route.Should().NotBeNull($"Route '{routeId}' must be configured in Gateway YARP reverse proxy");
         route!.ClusterId.Should().Be(expectedCluster);
         route.Match.Path.Should().Be(expectedPath);
+    }
+
+    /// <summary>
+    /// The refund list and the admin auction-report list exist in Commerce and Auction but had no Gateway route, so the Gateway answered 404.
+    /// A catch-all accepts the bare prefix and the detail path, and the neighbouring prefixes must stay with their own clusters.
+    /// </summary>
+    [Theory]
+    [InlineData("refunds-route", "/api/v1/refunds", true)]
+    [InlineData("refunds-route", "/api/v1/refunds/8f14e45f-ceea-467a-9b36-5d6f8e1a2c11", true)]
+    [InlineData("refunds-route", "/api/v1/orders/8f14e45f-ceea-467a-9b36-5d6f8e1a2c11/refunds", false)]
+    [InlineData("admin-auction-reports-route", "/api/v1/admin/auction-reports", true)]
+    [InlineData("admin-auction-reports-route", "/api/v1/admin/auction-reports/8f14e45f-ceea-467a-9b36-5d6f8e1a2c11", true)]
+    [InlineData("admin-auction-reports-route", "/api/v1/admin/auctions/attention-required", false)]
+    public async Task RefundAndAuctionReportRoutes_MatchTheBareAndDetailPathsOnly(string routeId, string requestPath, bool shouldMatch)
+    {
+        await using var factory = new WebApplicationFactory<Program>();
+        var route = factory.Services.GetRequiredService<IProxyConfigProvider>().GetConfig().Routes.First(r => r.RouteId == routeId);
+
+        var matcher = new Microsoft.AspNetCore.Routing.Template.TemplateMatcher(
+            Microsoft.AspNetCore.Routing.Template.TemplateParser.Parse(route.Match.Path!.TrimStart('/')),
+            new Microsoft.AspNetCore.Routing.RouteValueDictionary());
+
+        matcher.TryMatch(new Microsoft.AspNetCore.Http.PathString(requestPath), new Microsoft.AspNetCore.Routing.RouteValueDictionary())
+            .Should().Be(shouldMatch);
     }
 
     [Fact]
