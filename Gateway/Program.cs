@@ -41,7 +41,7 @@ builder.Services.AddCors(options =>
         policy.AllowAnyMethod()
               .AllowAnyHeader()
               .AllowCredentials()
-              .WithExposedHeaders("X-Trace-Id", "X-Content-Type-Options", "Retry-After");
+              .WithExposedHeaders("X-Trace-Id", "X-Content-Type-Options", "Retry-After", "X-Location-Source", "X-Location-Observed-At");
     });
 });
 

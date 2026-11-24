@@ -62,4 +62,21 @@ public class ResponseEnvelopeAndCorsTests
         response.Headers.TryGetValues("Access-Control-Allow-Credentials", out var creds).Should().BeTrue();
         creds!.First().Should().Be("true");
     }
+
+    [Fact]
+    public async Task Cors_ExposesTheLocationSourceHeaders_ToTheBrowser()
+    {
+        await using var factory = new WebApplicationFactory<Program>();
+        var client = factory.CreateClient();
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/");
+        request.Headers.Add("Origin", "http://localhost:3000");
+
+        var response = await client.SendAsync(request);
+
+        response.Headers.TryGetValues("Access-Control-Expose-Headers", out var exposed).Should().BeTrue();
+        var list = string.Join(",", exposed!);
+        list.Should().Contain("X-Location-Source");
+        list.Should().Contain("X-Location-Observed-At");
+    }
 }
