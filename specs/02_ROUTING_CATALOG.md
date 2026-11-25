@@ -61,6 +61,8 @@ One route per public resource prefix. Every route uses a `{**catch-all}` pattern
 | `admin-notifications-health-route` | `/api/v1/admin/health/{**catch-all}` | `notification-cluster` | `GET /api/v1/admin/health/broker` |
 | `wallets-route` | `/api/v1/wallets/{**catch-all}` | `wallet-cluster` | `GET /api/v1/wallets/me`, `POST /api/v1/wallets/transfers` |
 | `admin-wallets-route` | `/api/v1/admin/wallets/{**catch-all}` | `wallet-cluster` | `PATCH /api/v1/admin/wallets/withdrawals/{id}` |
+| `refunds-route` | `/api/v1/refunds/{**catch-all}` | `commerce-cluster` | `GET /api/v1/refunds`, `GET /api/v1/refunds/{id}` |
+| `admin-auction-reports-route` | `/api/v1/admin/auction-reports/{**catch-all}` | `auction-cluster` | `GET /api/v1/admin/auction-reports` |
 | `healthcheck-route` | `/api/v1/healthcheck/{**catch-all}` | `checkheal-cluster` | `GET /api/v1/healthcheck/status`, `GET /api/v1/healthcheck/services` |
 | `health-route` | `/health/{**catch-all}` | `checkheal-cluster` | `GET /health/live`, `GET /health/ready` |
 
