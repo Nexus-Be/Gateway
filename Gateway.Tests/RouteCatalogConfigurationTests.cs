@@ -162,6 +162,7 @@ public sealed class RouteCatalogConfigurationTests
     [InlineData("auction-orders-seller-route", "/api/v1/auction-orders/seller", "commerce-cluster")]
     [InlineData("discounts-route", "/api/v1/discounts/{**catch-all}", "commerce-cluster")]
     [InlineData("admin-platform-fee-route", "/api/v1/admin/platform-fee/{**catch-all}", "commerce-cluster")]
+    [InlineData("admin-buyer-refusal-penalties-route", "/api/v1/admin/buyer-refusal-penalties/{**catch-all}", "commerce-cluster")]
     [InlineData("refunds-route", "/api/v1/refunds/{**catch-all}", "commerce-cluster")]
     [InlineData("admin-auction-reports-route", "/api/v1/admin/auction-reports/{**catch-all}", "auction-cluster")]
     [InlineData("shipping-locations-route", "/api/v1/shipping/locations/{**catch-all}", "fulfillment-cluster")]
