@@ -34,6 +34,7 @@ services:
       ReverseProxy__Clusters__notification-cluster__Destinations__notification-service__Address: "${NOTIFICATION_SERVICE_URL:-http://notification-service:8007}"
       ReverseProxy__Clusters__wallet-cluster__Destinations__wallet-service__Address: "${WALLET_SERVICE_URL:-http://wallet-service:8008}"
       ReverseProxy__Clusters__checkheal-cluster__Destinations__checkheal-service__Address: "${CHECKHEAL_SERVICE_URL:-http://checkheal-service:8009}"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_EXPORTER_OTLP_ENDPOINT:-}"
     restart: unless-stopped
 
 networks:
