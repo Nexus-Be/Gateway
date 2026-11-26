@@ -9,6 +9,7 @@ COPY ["Gateway/Gateway.csproj", "Gateway/"]
 RUN dotnet restore "Gateway/Gateway.csproj"
 COPY Gateway/ Gateway/
 WORKDIR "/src/Gateway"
+RUN if [ ! -f "appsettings.json" ] && [ -f "appsettings.example.json" ]; then cp "appsettings.example.json" "appsettings.json"; fi
 RUN dotnet build "Gateway.csproj" -c Release -o /app/build
 
 FROM build AS publish

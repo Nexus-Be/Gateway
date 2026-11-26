@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Text;
 using Gateway.Authentication;
 using Gateway.Extensions;
@@ -16,6 +17,12 @@ using Serilog;
 using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Fallback to appsettings.example.json when appsettings.json is absent (e.g. Docker builds from Git)
+if (!File.Exists(Path.Combine(builder.Environment.ContentRootPath, "appsettings.json")))
+{
+    builder.Configuration.AddJsonFile("appsettings.example.json", optional: true, reloadOnChange: true);
+}
 
 // 1. Serilog Logging
 builder.Host.UseSerilog((context, services, configuration) =>
