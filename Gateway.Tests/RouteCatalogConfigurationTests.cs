@@ -84,6 +84,7 @@ public sealed class RouteCatalogConfigurationTests
     [InlineData("auction-me-watchlist-route", "/api/v1/me/watchlist/{**catch-all}", "auction-cluster")]
     [InlineData("auction-seller-reserve-status-route", "/api/v1/seller/reserve-status/{**catch-all}", "auction-cluster")]
     [InlineData("auction-me-offers-route", "/api/v1/me/auction-offers/{**catch-all}", "auction-cluster")]
+    [InlineData("auction-me-reports-route", "/api/v1/me/auction-reports/{**catch-all}", "auction-cluster")]
     [InlineData("auction-settlements-route", "/api/v1/auction-settlements/{**catch-all}", "auction-cluster")]
     [InlineData("admin-auctions-route", "/api/v1/admin/auctions/{**catch-all}", "auction-cluster")]
     [InlineData("seller-auction-statistics-route", "/api/v1/sellers/{sellerId}/auction-statistics", "auction-cluster")]
