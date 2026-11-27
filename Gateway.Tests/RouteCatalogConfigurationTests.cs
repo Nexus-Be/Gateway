@@ -117,6 +117,21 @@ public sealed class RouteCatalogConfigurationTests
         (moderate.Order ?? 0).Should().BeLessThan(catchAll.Order ?? 0);
     }
 
+    [Fact]
+    public async Task ProductReviewList_IsEvaluatedBeforeTheAdminReviewsCatchAll()
+    {
+        await using var factory = new WebApplicationFactory<Program>();
+        var routes = factory.Services.GetRequiredService<IProxyConfigProvider>().GetConfig().Routes;
+
+        var list = routes.First(r => r.RouteId == "admin-product-reviews-list-route");
+        var catchAll = routes.First(r => r.RouteId == "admin-reviews-route");
+
+        list.ClusterId.Should().Be("catalog-cluster");
+        list.Match.Path.Should().Be("/api/v1/admin/reviews");
+        list.Match.Methods.Should().BeEquivalentTo(new[] { "GET" });
+        (list.Order ?? 0).Should().BeLessThan(catchAll.Order ?? 0);
+    }
+
     /// <summary>
     /// /api/v1/admin/reports/products belongs to CatalogService but sits under the /api/v1/admin/reports catch-all of UserService.
     /// With a higher Order number it was evaluated after the catch-all and every call ended in a 404 from UserService.

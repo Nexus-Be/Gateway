@@ -37,6 +37,8 @@ One route per public resource prefix. Every route uses a `{**catch-all}` pattern
 | `admin-penalties-route` | `/api/v1/admin/penalties/{**catch-all}` | `user-cluster` | `GET /api/v1/admin/penalties`, `PUT .../{id}/revoke` |
 | `admin-reports-route` | `/api/v1/admin/reports/{**catch-all}` | `user-cluster` | `GET /api/v1/admin/reports`, `PUT .../{id}/resolve` |
 | `admin-reviews-route` | `/api/v1/admin/reviews/{**catch-all}` | `user-cluster` | `PUT /api/v1/admin/reviews/{id}/hide` |
+| `admin-product-reviews-list-route` | `/api/v1/admin/reviews` (`GET`, `Order: -1`) | `catalog-cluster` | `GET /api/v1/admin/reviews` |
+| `admin-product-reviews-moderate-route` | `/api/v1/admin/reviews/{id}/moderate` (`Order: -1`) | `catalog-cluster` | `PATCH /api/v1/admin/reviews/{id}/moderate` |
 | `admin-configs-route` | `/api/v1/admin/configs/{**catch-all}` | `user-cluster` | `GET /api/v1/admin/configs`, `PUT /api/v1/admin/configs` |
 | `reputation-route` | `/api/v1/reputation/{**catch-all}` | `user-cluster` | `GET /api/v1/reputation/policy` |
 | `reviews-route` | `/api/v1/reviews/{**catch-all}` | `user-cluster` | `POST /api/v1/reviews` |
